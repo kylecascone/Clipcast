@@ -74,28 +74,43 @@ change_settings({"IMAGEMAGICK_BINARY": _IM_BINARY})
 logger = logging.getLogger(__name__)
 
 # ── Font resolver ──────────────────────────────────────────────────────────────
-# ImageMagick v7 on macOS cannot resolve font names like "Arial" via fontconfig.
-# We map common names → absolute .ttf/.otf paths so TextClip always works.
-_SUPPLEMENTAL = Path("/System/Library/Fonts/Supplemental")
-_SYSTEM       = Path("/System/Library/Fonts")
+# Returns an absolute path to a usable bold/sans font on macOS and Linux.
+# Called at module level so all font constants resolve once at import time.
 
+def find_font() -> Optional[str]:
+    """Return the first existing font path for the current OS, or None."""
+    import platform as _platform
+    if _platform.system() == "Darwin":
+        candidates = [
+            "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "/System/Library/Fonts/Supplemental/Impact.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/Library/Fonts/Arial.ttf",
+        ]
+    else:
+        # Linux / Railway (Nix dejavu_fonts package or distro defaults)
+        candidates = [
+            "/run/current-system/sw/share/X11/fonts/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+        ]
+    return next((p for p in candidates if Path(p).exists()), None)
+
+
+_FONT_FALLBACK = find_font()
+
+# ImageMagick v7 cannot resolve font names via fontconfig on macOS;
+# map logical names to absolute paths using find_font() as the fallback.
 _FONT_MAP: Dict[str, str] = {
-    "Arial":      str(_SUPPLEMENTAL / "Arial.ttf"),
-    "Arial Bold": str(_SUPPLEMENTAL / "Arial Bold.ttf"),
-    "Impact":     str(_SUPPLEMENTAL / "Impact.ttf"),
-    "Helvetica":  str(_SYSTEM       / "Helvetica.ttc"),
+    "Arial":      _FONT_FALLBACK or "Arial",
+    "Arial Bold": _FONT_FALLBACK or "Arial",
+    "Impact":     _FONT_FALLBACK or "Impact",
+    "Helvetica":  _FONT_FALLBACK or "Helvetica",
 }
-
-# Fallback: first font that physically exists on this machine
-_FONT_FALLBACK = next(
-    (p for p in [
-        str(_SUPPLEMENTAL / "Arial.ttf"),
-        str(_SUPPLEMENTAL / "Impact.ttf"),
-        str(_SYSTEM / "Helvetica.ttc"),
-        str(_SYSTEM / "ArialHB.ttc"),
-    ] if Path(p).exists()),
-    None,
-)
 
 
 def _resolve_font(name: Optional[str]) -> Optional[str]:
@@ -716,9 +731,7 @@ OUTPUT_W   = 1080
 OUTPUT_H   = 1920
 BRANDING_H = 80
 
-_FONT_BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-if not Path(_FONT_BOLD).exists():
-    _FONT_BOLD = "/System/Library/Fonts/Helvetica.ttc"
+_FONT_BOLD = find_font()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -814,15 +827,7 @@ def make_hook_text_overlay(
     text = censor_caption_text(text)
 
     # Arial Bold gives the cleanest readable TikTok style
-    font_path = None
-    for fp in [
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-        "/System/Library/Fonts/Supplemental/Impact.ttf",
-        "/System/Library/Fonts/Helvetica.ttc",
-    ]:
-        if Path(fp).exists():
-            font_path = fp
-            break
+    font_path = find_font()
     if not font_path:
         raise RuntimeError("No suitable font found for hook overlay")
 
@@ -1269,7 +1274,7 @@ def _normalize_audio(video_path: Path) -> Optional[Path]:
 
 # ── drawtext availability cache (checked once per process) ────────────────────
 _DRAWTEXT_AVAILABLE: Optional[bool] = None
-_DRAWTEXT_FONT = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+_DRAWTEXT_FONT = find_font()
 
 
 def _check_drawtext() -> bool:
@@ -1322,18 +1327,10 @@ def _burn_captions_ffmpeg(
     if not _check_drawtext():
         return None
 
-    font_path = _DRAWTEXT_FONT
-    if not Path(font_path).exists():
-        for candidate in [
-            "/System/Library/Fonts/Supplemental/Arial.ttf",
-            "/System/Library/Fonts/Helvetica.ttc",
-        ]:
-            if Path(candidate).exists():
-                font_path = candidate
-                break
-        else:
-            logger.warning("No TTF font found for drawtext — falling back to MoviePy.")
-            return None
+    font_path = _DRAWTEXT_FONT or find_font()
+    if not font_path:
+        logger.warning("No TTF font found for drawtext — falling back to MoviePy.")
+        return None
 
     # Place captions in the blur zone just below the bottom edge of the video frame.
     if fg_h > 0:
@@ -1459,17 +1456,9 @@ def _burn_captions_png_overlay(
     except ImportError:
         return None
 
-    font_path = _DRAWTEXT_FONT
-    if not Path(font_path).exists():
-        for candidate in [
-            "/System/Library/Fonts/Supplemental/Arial.ttf",
-            "/System/Library/Fonts/Helvetica.ttc",
-        ]:
-            if Path(candidate).exists():
-                font_path = candidate
-                break
-        else:
-            return None
+    font_path = _DRAWTEXT_FONT or find_font()
+    if not font_path:
+        return None
 
     # ── Probe video dimensions and frame rate ─────────────────────────────────
     try:
