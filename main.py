@@ -677,6 +677,136 @@ def _run_once(test_mode: bool) -> None:
     )
 
 
+def _bootstrap_railway() -> None:
+    """
+    Graceful first-run bootstrap for Railway (and any headless environment).
+
+    Detected via the RAILWAY_ENVIRONMENT env var that Railway injects
+    automatically. When present, this function:
+      - Creates config.yaml from env vars if missing
+      - Creates preferences.yaml with working defaults if missing
+      - Creates the clips/ folder tree
+      - Initialises the SQLite database
+      - Auto-records ToS consent (no interactive terminal available)
+
+    Prints a summary of everything it finds and creates.
+    Is a no-op when not on Railway.
+    """
+    import os
+    import yaml
+
+    on_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"))
+    if not on_railway:
+        return
+
+    root = Path(__file__).parent
+    print("=" * 60)
+    print("  ClipCast Studio — Railway bootstrap")
+    print("=" * 60)
+
+    # ── 1. clips/ folder tree ─────────────────────────────────────────────────
+    folders = [
+        root / "clips" / "raw",
+        root / "clips" / "processed",
+        root / "clips" / "compiled",
+        root / "clips" / "manual",
+        root / "legal",
+    ]
+    for folder in folders:
+        if folder.exists():
+            print(f"  [ok]     {folder.relative_to(root)}/")
+        else:
+            folder.mkdir(parents=True, exist_ok=True)
+            print(f"  [create] {folder.relative_to(root)}/")
+
+    # ── 2. config.yaml from env vars ──────────────────────────────────────────
+    config_path = root / "config.yaml"
+    if config_path.exists():
+        print(f"  [ok]     config.yaml")
+    else:
+        twitch_id     = os.environ.get("TWITCH_CLIENT_ID", "")
+        twitch_secret = os.environ.get("TWITCH_CLIENT_SECRET", "")
+        youtube_key   = os.environ.get("YOUTUBE_API_KEY", "")
+        config = {
+            "twitch":  {"client_id": twitch_id, "client_secret": twitch_secret},
+            "youtube": {"api_key": youtube_key},
+            "tiktok":  {
+                "client_key": os.environ.get("TIKTOK_CLIENT_KEY", ""),
+                "client_secret": os.environ.get("TIKTOK_CLIENT_SECRET", ""),
+                "access_token": os.environ.get("TIKTOK_ACCESS_TOKEN", ""),
+                "refresh_token": os.environ.get("TIKTOK_REFRESH_TOKEN", ""),
+                "token_expires_at": "",
+            },
+        }
+        with open(config_path, "w") as f:
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+        missing = [k for k, v in {
+            "TWITCH_CLIENT_ID": twitch_id,
+            "TWITCH_CLIENT_SECRET": twitch_secret,
+            "YOUTUBE_API_KEY": youtube_key,
+        }.items() if not v]
+        print(f"  [create] config.yaml (from env vars)")
+        if missing:
+            print(f"  [warn]   Missing env vars: {', '.join(missing)}")
+
+    # ── 3. preferences.yaml with safe defaults ────────────────────────────────
+    prefs_path = root / "preferences.yaml"
+    if prefs_path.exists():
+        print(f"  [ok]     preferences.yaml")
+    else:
+        defaults = {
+            "clip_length":                    "medium",
+            "post_frequency":                 1,
+            "posting_times":                  ["14:00"],
+            "max_clips_per_compilation":      1,
+            "minimum_clip_quality_score":     0,
+            "minimum_views":                  0,
+            "default_video_template":         1,
+            "manual_mode_default_template":   1,
+            "default_caption_style":          1,
+            "manual_mode_posting_behavior":   "scheduled",
+            "clip_preview_required":          False,
+            "ai_scorer_enabled":              False,
+            "animated_captions_enabled":      True,
+            "animated_caption_style":         1,
+            "smart_hashtags_enabled":         True,
+            "smart_hashtags_max":             5,
+            "thumbnail_enabled":              True,
+            "learning_enabled":               True,
+            "learning_lookback_days":         30,
+            "target_platforms":               ["tiktok"],
+            "target_streamers":               [],
+            "twitch_enabled":                 True,
+            "youtube_enabled":                True,
+            "global_pool_size":               50,
+            "allow_clips_from_non_target_streamers": True,
+            "allow_youtube_trending":         True,
+            "youtube_global_pool_enabled":    True,
+            "youtube_lookback_days":          7,
+            "attribution_format":             "standard",
+            "pool_refresh_interval_hours":    6,
+            "clip_reservation_hours":         24,
+        }
+        with open(prefs_path, "w") as f:
+            yaml.dump(defaults, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        print(f"  [create] preferences.yaml (defaults)")
+
+    # ── 4. Database + auto-consent ────────────────────────────────────────────
+    try:
+        from database import initialize_database, has_consented, record_consent
+        initialize_database()
+        print(f"  [ok]     database initialised")
+        if not has_consented(user_id=1, version="1.0"):
+            record_consent(user_id=1, version="1.0")
+            print(f"  [ok]     ToS consent auto-recorded (headless/Railway mode)")
+        else:
+            print(f"  [ok]     ToS consent already on record")
+    except Exception as exc:
+        print(f"  [warn]   Database init issue: {exc}")
+
+    print("=" * 60)
+
+
 def _check_first_run() -> bool:
     """
     Return True if preferences.yaml doesn't exist yet (first time running).
@@ -921,6 +1051,7 @@ def main() -> None:
         cmd_run()
 
     elif args.schedule:
+        _bootstrap_railway()
         if _check_first_run():
             sys.exit(0)
         cmd_schedule()
