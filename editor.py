@@ -100,10 +100,10 @@ def find_font() -> Optional[str]:
         for p in ["/usr/share/fonts", "/nix/store", "/run/current-system"]:
             print(f"FONT DEBUG: {p} exists: {_os.path.exists(p)}", flush=True)
 
-        # Railway Nixpacks installs fonts under a hashed /nix/store path —
-        # search dynamically first since the hash changes between builds.
+        # Railway Nixpacks installs fonts under a hashed /nix/store path.
+        # Fonts live directly in truetype/ (not truetype/dejavu/).
         nix_fonts = glob.glob(
-            "/nix/store/*/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+            "/nix/store/*/share/fonts/truetype/DejaVuSans-Bold.ttf"
         )
         if nix_fonts:
             print(f"FONT DEBUG: using nix_fonts[0] = {nix_fonts[0]}", flush=True)
