@@ -6,5 +6,3 @@ nixPkgs = [
   'dejavu_fonts', # cross-platform TTF fonts for PIL/ImageMagick caption rendering
 ]
 
-[start]
-cmd = 'python3.11 webapp/app.py'
