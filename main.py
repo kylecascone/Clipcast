@@ -138,6 +138,10 @@ def cmd_schedule() -> None:
     """Start the full automated scheduler."""
     print("RAILWAY DEBUG: cmd_schedule() entered", flush=True)
 
+    print("RAILWAY DEBUG: calling _bootstrap_railway()", flush=True)
+    _bootstrap_railway()
+    print("RAILWAY DEBUG: _bootstrap_railway() complete", flush=True)
+
     print("RAILWAY DEBUG: calling _require_consent()", flush=True)
     _require_consent()
     print("RAILWAY DEBUG: _require_consent() passed", flush=True)

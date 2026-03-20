@@ -596,7 +596,8 @@ if __name__ == "__main__":
 
     if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"):
         import threading
-        from main import cmd_schedule
+        from main import _bootstrap_railway, cmd_schedule
+        _bootstrap_railway()
         scheduler_thread = threading.Thread(target=cmd_schedule, daemon=True)
         scheduler_thread.start()
         print("Railway: scheduler started in background thread", flush=True)
