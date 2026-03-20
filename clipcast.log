@@ -14375,3 +14375,11 @@ OSError: [Errno 28] No space left on device: '/Users/kylecascone/Desktop/clipcas
 20:02:05  ERROR     scheduler  Editing failed for package 326.
 20:02:05  INFO      fetcher_manual  Manual clip folder watcher stopped.
 20:02:05  INFO      scheduler  Scheduler stopped.
+23:12:27  INFO      database  Database initialized at /Users/kylecascone/Desktop/clipcast-studio/clipcast.db
+23:12:27  INFO      database  Database initialized at /Users/kylecascone/Desktop/clipcast-studio/clipcast.db
+23:12:27  INFO      database  Database initialized at /Users/kylecascone/Desktop/clipcast-studio/clipcast.db
+23:12:27  INFO      fetcher_manual  Watching for manual clips in: /Users/kylecascone/Desktop/clipcast-studio/clips/manual
+23:12:27  INFO      scheduler  === Automated pipeline started at 2026-03-19 23:12:27 ===
+23:12:27  INFO      shared_pool  expire_old_clips: removed 890 expired clip(s).
+23:12:28  INFO      pool_fetcher  refresh_twitch_pool: resolving 46 TIER1_TWITCH creator(s)…
+23:12:28  INFO      pool_fetcher  refresh_twitch_pool: resolved 44/46 creators — fetching clips…

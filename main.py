@@ -1,3 +1,7 @@
+import sys as _sys
+print("RAILWAY DEBUG: main.py started", flush=True)
+print(f"RAILWAY DEBUG: python {_sys.version}", flush=True)
+
 """
 main.py
 =======
@@ -22,6 +26,8 @@ Usage:
   python main.py --learn              Analyse post performance and auto-tune settings
 """
 
+print("RAILWAY DEBUG: starting imports", flush=True)
+
 # ── Pillow ≥10 compatibility patch — must run before moviepy is imported ───────
 # PIL removed Image.ANTIALIAS in Pillow 10.0.0; moviepy still references it.
 # Patching here (first import in the process) guarantees the attribute exists
@@ -39,8 +45,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+print("RAILWAY DEBUG: stdlib imported OK", flush=True)
+
 from rich.console import Console
 from rich.panel import Panel
+
+print("RAILWAY DEBUG: rich imported OK", flush=True)
 
 console = Console()
 
@@ -52,14 +62,17 @@ console = Console()
 def configure_logging(verbose: bool = False) -> None:
     """Configure logging for the application."""
     level = logging.DEBUG if verbose else logging.INFO
+    log_path = Path(__file__).parent / "clipcast.log"
+    handlers: list = [logging.StreamHandler(sys.stdout)]
+    try:
+        handlers.append(logging.FileHandler(log_path, encoding="utf-8"))
+    except OSError as e:
+        print(f"RAILWAY DEBUG: could not open log file {log_path}: {e}", flush=True)
     logging.basicConfig(
         level=level,
         format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
         datefmt="%H:%M:%S",
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler("clipcast.log", encoding="utf-8"),
-        ],
+        handlers=handlers,
     )
     # Silence noisy third-party loggers at INFO level
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -123,20 +136,35 @@ def cmd_run() -> None:
 
 def cmd_schedule() -> None:
     """Start the full automated scheduler."""
+    print("RAILWAY DEBUG: cmd_schedule() entered", flush=True)
+
+    print("RAILWAY DEBUG: calling _require_consent()", flush=True)
     _require_consent()
+    print("RAILWAY DEBUG: _require_consent() passed", flush=True)
+
+    print("RAILWAY DEBUG: importing scheduler, preferences, database", flush=True)
     from scheduler import start_scheduler
     from preferences import load_config, load_preferences
     from database import initialize_database
+    print("RAILWAY DEBUG: imports OK", flush=True)
 
     try:
+        print("RAILWAY DEBUG: calling load_config()", flush=True)
         config = load_config()
+        print("RAILWAY DEBUG: load_config() OK", flush=True)
+        print("RAILWAY DEBUG: calling load_preferences()", flush=True)
         prefs  = load_preferences()
+        print("RAILWAY DEBUG: load_preferences() OK", flush=True)
     except (FileNotFoundError, ValueError) as e:
+        print(f"RAILWAY DEBUG: config/prefs load FAILED: {e}", flush=True)
         console.print(f"[red]Configuration error:[/red] {e}")
         sys.exit(1)
 
+    print("RAILWAY DEBUG: calling initialize_database()", flush=True)
     initialize_database()
+    print("RAILWAY DEBUG: initialize_database() OK — calling start_scheduler()", flush=True)
     start_scheduler(user_config=config, user_prefs=prefs, test_mode=False)
+    print("RAILWAY DEBUG: start_scheduler() returned (should not happen in normal operation)", flush=True)
 
 
 def cmd_manual(source: str) -> None:
@@ -1025,10 +1053,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     """Main entry point."""
+    print("RAILWAY DEBUG: main() called", flush=True)
     parser = build_parser()
     args = parser.parse_args()
+    print(f"RAILWAY DEBUG: args parsed — schedule={getattr(args, 'schedule', False)}", flush=True)
 
     configure_logging(verbose=args.verbose)
+    print("RAILWAY DEBUG: logging configured", flush=True)
 
     # Print header
     console.print(
@@ -1051,9 +1082,13 @@ def main() -> None:
         cmd_run()
 
     elif args.schedule:
+        print("RAILWAY DEBUG: --schedule branch entered", flush=True)
         _bootstrap_railway()
+        print("RAILWAY DEBUG: bootstrap complete", flush=True)
         if _check_first_run():
+            print("RAILWAY DEBUG: _check_first_run returned True — exiting (no preferences.yaml)", flush=True)
             sys.exit(0)
+        print("RAILWAY DEBUG: _check_first_run passed — calling cmd_schedule()", flush=True)
         cmd_schedule()
 
     elif args.manual:
