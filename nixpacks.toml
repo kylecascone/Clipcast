@@ -1,0 +1,10 @@
+[phases.setup]
+nixPkgs = [
+  'python311',
+  'ffmpeg',       # video processing, audio normalization, subtitle burn
+  'imagemagick',  # MoviePy TextClip fallback (editor.py caption rendering)
+  'dejavu_fonts', # cross-platform TTF fonts for PIL/ImageMagick caption rendering
+]
+
+[start]
+cmd = 'python3.11 webapp/app.py'
