@@ -29,6 +29,13 @@ SCOPES = [
 
 
 def get_youtube_client():
+    import base64
+
+    # Reconstruct youtube_token.pickle from environment variable on Railway
+    token_b64 = os.environ.get('YOUTUBE_TOKEN_BASE64')
+    if token_b64 and not TOKEN_FILE.exists():
+        TOKEN_FILE.write_bytes(base64.b64decode(token_b64))
+
     creds = None
 
     if TOKEN_FILE.exists():
