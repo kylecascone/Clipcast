@@ -593,4 +593,12 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
     print(f"  http://127.0.0.1:{port}")
     print("=" * 60)
+
+    if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"):
+        import threading
+        from main import cmd_schedule
+        scheduler_thread = threading.Thread(target=cmd_schedule, daemon=True)
+        scheduler_thread.start()
+        print("Railway: scheduler started in background thread", flush=True)
+
     socketio.run(app, host="0.0.0.0", port=port, debug=False)
