@@ -318,6 +318,23 @@ def run_automated_pipeline(
     from captions import generate_caption
     from editor import process_package
 
+    # Check whether the user has configured any posting slots.
+    # If schedule.yaml is empty or missing, process and store clips in the DB
+    # but DO NOT add them to the posting queue — the user hasn't said when to post.
+    _sched = load_schedule()
+    _DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    _schedule_has_slots = any(_sched.get(day) for day in _DAYS)
+    if not _schedule_has_slots and not test_mode:
+        logger.info(
+            "schedule.yaml has no slots — packages will be processed and stored "
+            "but NOT queued. Configure a schedule in the webapp to enable posting."
+        )
+        console.print(
+            "  [dim]No schedule slots configured — clips will be processed "
+            "and stored but not queued for posting.[/dim]\n"
+            "  [dim]Set a posting schedule in the webapp to enable auto-posting.[/dim]"
+        )
+
     for pkg in packages:
         if enforce_daily_limit(user_prefs, user_id=user_id):
             logger.info("Daily post limit reached. Stopping queue additions for today.")
@@ -387,7 +404,7 @@ def run_automated_pipeline(
             continue
 
         # ── Add to posting queue ───────────────────────────────────────────────
-        if not test_mode:
+        if not test_mode and _schedule_has_slots:
             queue_id, slot = add_package_to_queue(
                 package_id=package_id,
                 user_prefs=user_prefs,
@@ -397,6 +414,12 @@ def run_automated_pipeline(
             console.print(
                 f"  [green]Queued[/green] package {package_id} "
                 f"→ post at [bold]{slot.strftime('%Y-%m-%d %H:%M')}[/bold]"
+            )
+        elif not test_mode:
+            # No schedule slots — clip is processed and ready but held back.
+            console.print(
+                f"  [dim]Package {package_id} processed and stored "
+                f"(not queued — no schedule slots configured)[/dim]"
             )
         else:
             _test_title = (
