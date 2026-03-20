@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Queue — ClipCast Studio{% endblock %}
+{% block page_title %}Posting Queue{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn-primary-cc" onclick="loadQueue()">
+    <i class="bi bi-arrow-clockwise"></i> Refresh
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="queue-header-row">
+  <span class="queue-count-label">
+    <span id="queue-total">0</span> items
+  </span>
+  <div class="queue-filters">
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('pending', this)">Pending</button>
+    <button class="filter-btn" onclick="setFilter('posted', this)">Posted</button>
+  </div>
+</div>
+
+<div id="queue-list">
+  <div class="empty-state" style="padding:40px;text-align:center;color:#6b7280;">Loading...</div>
+</div>
+
+<style>
+.queue-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.queue-count-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.queue-filters {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-btn {
+  padding: 5px 14px;
+  font-size: 12px;
+  border-radius: 20px;
+  border: 1px solid #2a2d3e;
+  background: none;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+  background: #6c63ff;
+  border-color: #6c63ff;
+  color: white;
+}
+
+.queue-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+
+.queue-card:hover {
+  border-color: rgba(108,99,255,0.3);
+}
+
+.queue-thumb {
+  width: 44px;
+  height: 58px;
+  border-radius: 7px;
+  background: #12141f;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  font-size: 18px;
+  border: 1px solid #2a2d3e;
+}
+
+.queue-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.queue-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.queue-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 7px;
+}
+
+.queue-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.platform-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.platform-badge.tiktok   { background: rgba(0,242,195,0.12); color: #00f2c3; }
+.platform-badge.youtube  { background: rgba(255,0,0,0.12);   color: #ff4444; }
+.platform-badge.instagram { background: rgba(225,48,108,0.12); color: #e1306c; }
+.platform-badge.both,
+.platform-badge.all      { background: rgba(108,99,255,0.12); color: #a78bfa; }
+
+.queue-time   { font-size: 12px; color: #6b7280; }
+.queue-creator { font-size: 12px; color: #6b7280; }
+
+.queue-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.status-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-pill.pending    { background: rgba(234,179,8,0.15);  color: #eab308; }
+.status-pill.processing { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.status-pill.posted     { background: rgba(34,197,94,0.15);  color: #22c55e; }
+.status-pill.failed     { background: rgba(239,68,68,0.15);  color: #ef4444; }
+.status-pill.cancelled  { background: rgba(107,114,128,0.15); color: #6b7280; }
+
+.btn-cancel {
+  padding: 5px 12px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-cancel:hover {
+  background: rgba(239,68,68,0.18);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allItems = [];
+let activeFilter = 'all';
+
+function setFilter(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+function loadQueue() {
+  fetch('/api/queue')
+    .then(r => r.json())
+    .then(items => {
+      allItems = items;
+      renderList();
+    });
+}
+
+function renderList() {
+  const filtered = activeFilter === 'all'
+    ? allItems
+    : allItems.filter(i => i.status === activeFilter);
+
+  document.getElementById('queue-total').textContent = filtered.length;
+  const list = document.getElementById('queue-list');
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:40px;text-align:center;color:#6b7280;">Queue is empty</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(item => {
+    const thumbHtml = item.thumbnail_path
+      ? `<img src="/thumb/${item.id}" alt="" onerror="this.parentElement.innerHTML='🎬'">`
+      : '🎬';
+
+    const platform = (item.platform || 'tiktok').toLowerCase();
+    const platformLabel = platform === 'both' ? 'Both' : platform.charAt(0).toUpperCase() + platform.slice(1);
+
+    const creator = item.creator_name ? `<span class="queue-creator">· ${escHtml(item.creator_name)}</span>` : '';
+    const dur = item.duration ? `<span class="queue-time">${item.duration}s</span>` : '';
+
+    const cancelBtn = item.status === 'pending'
+      ? `<button class="btn-cancel" onclick="cancelItem(${item.id})">Cancel</button>`
+      : '';
+
+    return `
+      <div class="queue-card">
+        <div class="queue-thumb">${thumbHtml}</div>
+        <div class="queue-info">
+          <div class="queue-title">${escHtml(item.clip_title || 'Untitled')}</div>
+          <div class="queue-meta">
+            <span class="platform-badge ${platform}">${platformLabel}</span>
+            <span class="queue-time">${fmtTime(item.scheduled_for)}</span>
+            ${dur}
+            ${creator}
+          </div>
+        </div>
+        <div class="queue-actions">
+          <span class="status-pill ${item.status}">${capitalize(item.status)}</span>
+          ${cancelBtn}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function cancelItem(id) {
+  if (!confirm('Cancel this queued post?')) return;
+  fetch(`/api/queue/${id}/cancel`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      showToast(d.ok ? 'Cancelled' : (d.error || 'Error'), d.ok ? 'success' : 'error');
+      loadQueue();
+    });
+}
+
+function fmtTime(str) {
+  if (!str) return '—';
+  const d = new Date(str.replace(' ', 'T'));
+  if (isNaN(d)) return str.slice(0, 16).replace('T', ' ');
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return isToday ? `Today ${timeStr}` : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + timeStr;
+}
+
+function capitalize(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+loadQueue();
+setInterval(loadQueue, 15000);
+</script>
+{% endblock %}

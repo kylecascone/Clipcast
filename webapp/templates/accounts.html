@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts — ClipCast Studio{% endblock %}
+{% block page_title %}Accounts{% endblock %}
+
+{% block content %}
+<p style="color:#6b7280;font-size:14px;margin-bottom:24px;">Connect your social media accounts to start posting automatically</p>
+
+<div class="accounts-grid">
+
+  <!-- TikTok -->
+  <div class="account-card" id="tiktok-card">
+    <div class="account-header">
+      <div class="platform-icon tiktok-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.77a4.85 4.85 0 01-1.01-.08z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="account-name">TikTok</div>
+        <span class="status-badge" id="tiktok-status">Not Connected</span>
+      </div>
+    </div>
+    <div class="account-fields">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="tiktok-username" placeholder="@yourusername">
+      </div>
+      <div class="field-group">
+        <label>Session Cookie</label>
+        <input type="password" id="tiktok-cookie" placeholder="sessionid=...">
+        <span class="field-hint">Browser dev tools → Application → Cookies → TikTok → sessionid</span>
+      </div>
+    </div>
+    <div class="account-actions">
+      <button class="btn-connect" onclick="saveAccount('tiktok')">Save & Connect</button>
+      <button class="btn-test" onclick="testAccount('tiktok')">Test</button>
+    </div>
+  </div>
+
+  <!-- YouTube -->
+  <div class="account-card" id="youtube-card">
+    <div class="account-header">
+      <div class="platform-icon youtube-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+          <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="account-name">YouTube Shorts</div>
+        <span class="status-badge" id="youtube-status">Not Connected</span>
+      </div>
+    </div>
+    <div class="account-fields">
+      <div class="field-group">
+        <label>Channel Name</label>
+        <input type="text" id="youtube-channel" placeholder="Your Channel Name">
+      </div>
+      <div class="field-group">
+        <label>Client ID</label>
+        <input type="text" id="youtube-client-id" placeholder="Google OAuth Client ID">
+      </div>
+      <div class="field-group">
+        <label>Client Secret</label>
+        <input type="password" id="youtube-client-secret" placeholder="Google OAuth Client Secret">
+        <span class="field-hint">Create OAuth credentials at console.cloud.google.com — then place the downloaded JSON as <code style="color:#6c63ff">youtube_credentials.json</code> in the project root</span>
+      </div>
+    </div>
+    <div class="account-actions">
+      <button class="btn-connect" onclick="connectYouTube()">Connect with Google</button>
+      <button class="btn-test" onclick="testYouTube()">Test</button>
+    </div>
+  </div>
+
+  <!-- Instagram -->
+  <div class="account-card" id="instagram-card">
+    <div class="account-header">
+      <div class="platform-icon instagram-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="account-name">Instagram Reels</div>
+        <span class="status-badge" id="instagram-status">Not Connected</span>
+      </div>
+    </div>
+    <div class="account-fields">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="instagram-username" placeholder="@yourusername">
+      </div>
+      <div class="field-group">
+        <label>Session Cookie</label>
+        <input type="password" id="instagram-cookie" placeholder="sessionid=...">
+        <span class="field-hint">Browser dev tools → Application → Cookies → Instagram → sessionid</span>
+      </div>
+    </div>
+    <div class="account-actions">
+      <button class="btn-connect" onclick="saveAccount('instagram')">Save & Connect</button>
+      <button class="btn-test" onclick="testAccount('instagram')">Test</button>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.account-card {
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: border-color 0.2s;
+}
+
+.account-card:hover        { border-color: rgba(108,99,255,0.3); }
+.account-card.connected    { border-color: rgba(34,197,94,0.3); }
+
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.platform-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tiktok-icon    { background: #010101; border: 1px solid #333; }
+.youtube-icon   { background: #ff0000; }
+.instagram-icon { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+
+.account-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 5px;
+}
+
+.status-badge {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  background: rgba(255,255,255,0.07);
+  color: #6b7280;
+}
+
+.status-badge.connected {
+  background: rgba(34,197,94,0.15);
+  color: #22c55e;
+}
+
+.account-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-group input {
+  background: #12141f;
+  border: 1px solid #2a2d3e;
+  border-radius: 8px;
+  padding: 9px 13px;
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.field-group input:focus { border-color: #6c63ff; }
+
+.field-hint {
+  font-size: 11px;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+.account-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.btn-connect {
+  flex: 1;
+  padding: 10px;
+  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-connect:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.btn-test {
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-test:hover { background: rgba(255,255,255,0.08); color: white; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let accountData = {};
+
+async function init() {
+  const res = await fetch('/api/accounts/status');
+  accountData = await res.json();
+
+  populate('tiktok',    ['username', 'cookie']);
+  populate('youtube',   ['channel', 'client_id', 'client_secret']);
+  populate('instagram', ['username', 'cookie']);
+}
+
+function populate(platform, fields) {
+  const data = accountData[platform] || {};
+  updateStatusBadge(platform, !!data.connected);
+  fields.forEach(f => {
+    const el = document.getElementById(`${platform}-${f.replace('_', '-')}`);
+    if (el) el.value = data[f] || '';
+  });
+}
+
+function updateStatusBadge(platform, connected) {
+  const badge = document.getElementById(`${platform}-status`);
+  const card  = document.getElementById(`${platform}-card`);
+  if (connected) {
+    badge.textContent = 'Connected';
+    badge.classList.add('connected');
+    card.classList.add('connected');
+  } else {
+    badge.textContent = 'Not Connected';
+    badge.classList.remove('connected');
+    card.classList.remove('connected');
+  }
+}
+
+async function saveAccount(platform) {
+  let data = {};
+  if (platform === 'tiktok') {
+    const cookie = document.getElementById('tiktok-cookie').value;
+    data = {
+      username:  document.getElementById('tiktok-username').value,
+      cookie,
+      connected: !!cookie,
+    };
+  } else if (platform === 'youtube') {
+    const cid = document.getElementById('youtube-client-id').value;
+    const cs  = document.getElementById('youtube-client-secret').value;
+    data = {
+      channel:       document.getElementById('youtube-channel').value,
+      client_id:     cid,
+      client_secret: cs,
+      connected:     !!(cid && cs),
+    };
+  } else if (platform === 'instagram') {
+    const cookie = document.getElementById('instagram-cookie').value;
+    data = {
+      username:  document.getElementById('instagram-username').value,
+      cookie,
+      connected: !!cookie,
+    };
+  }
+
+  accountData[platform] = data;
+  const res = await fetch('/api/accounts/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(accountData),
+  });
+  const result = await res.json();
+  if (result.ok) {
+    updateStatusBadge(platform, data.connected);
+    showToast(`${platform.charAt(0).toUpperCase()+platform.slice(1)} account saved!`);
+  } else {
+    showToast('Save failed: ' + (result.error || 'unknown'), 'error');
+  }
+}
+
+function testAccount(platform) {
+  if (platform === 'youtube') { testYouTube(); return; }
+  showToast(`Testing ${platform} connection…`);
+}
+
+async function connectYouTube() {
+  showToast('Opening Google authentication… check your browser');
+  try {
+    const res = await fetch('/api/accounts/youtube/auth', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      showToast(`Connected to ${data.channel}!`);
+      updateStatusBadge('youtube', true);
+      document.getElementById('youtube-channel').value = data.channel;
+      // Persist connected state
+      accountData['youtube'] = Object.assign(accountData['youtube'] || {}, { connected: true, channel: data.channel });
+      await fetch('/api/accounts/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountData),
+      });
+    } else {
+      showToast('Connection failed: ' + (data.error || 'Unknown error'), 'error');
+    }
+  } catch(e) {
+    showToast('Connection failed: ' + e, 'error');
+  }
+}
+
+async function testYouTube() {
+  showToast('Testing YouTube connection…');
+  try {
+    const res = await fetch('/api/accounts/youtube/test', { method: 'POST' });
+    const data = await res.json();
+    if (data.connected) {
+      showToast('YouTube connected successfully!');
+      updateStatusBadge('youtube', true);
+    } else {
+      showToast('Not connected: ' + (data.error || 'No token found'), 'error');
+    }
+  } catch(e) {
+    showToast('Test failed: ' + e, 'error');
+  }
+}
+
+init();
+</script>
+{% endblock %}

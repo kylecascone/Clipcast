@@ -1,0 +1,21 @@
+Thursday:
+- content_type: Any
+  creator: Jynxzi
+  min_score: 55
+  platform: youtube
+  time: 06:00
+- content_type: Any
+  creator: Jynxzi
+  min_score: 70
+  platform: youtube
+  time: '10:00'
+- content_type: IRL
+  creator: ''
+  min_score: 61
+  platform: youtube
+  time: '12:00'
+- content_type: IRL
+  creator: ''
+  min_score: 56
+  platform: youtube
+  time: '14:00'

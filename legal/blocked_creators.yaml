@@ -1,0 +1,11 @@
+# ── Creators Who Have Requested Opt-Out ──────────────────────────────────────
+#
+# Add Twitch usernames or YouTube channel IDs / @handles here to exclude
+# their content from all automated ClipCast processing.
+#
+# Manage this list with:  python main.py --blocked
+#
+
+blocked:
+  twitch: []
+  youtube: []

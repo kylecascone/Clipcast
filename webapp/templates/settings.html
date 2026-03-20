@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — ClipCast Studio{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn-primary-cc" id="save-btn" onclick="saveSettings()">
+    <i class="bi bi-floppy"></i> Save
+  </button>
+{% endblock %}
+
+{% block content %}
+<!-- Tab nav -->
+<div class="settings-tabs" id="settings-tabs">
+  <button class="stab active" onclick="switchTab('preferences', this)">Preferences</button>
+  <button class="stab" onclick="switchTab('blocked', this)">Blocked Creators</button>
+</div>
+
+<!-- Tab: Preferences -->
+<div id="tab-preferences">
+<div class="settings-grid">
+
+  <!-- Content -->
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-film"></i> Content</span></div>
+    <div class="settings-body">
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Clip Length</label>
+          <small>Target duration for clips</small>
+        </div>
+        <select id="s-clip_length" class="cc-select w-auto">
+          <option value="extra_short">Extra Short (15–30s)</option>
+          <option value="short">Short (30–45s)</option>
+          <option value="medium_short">Medium Short (45–60s)</option>
+          <option value="medium">Medium (60–90s) ★</option>
+          <option value="long">Long (90–120s)</option>
+          <option value="extra_long">Extra Long (120–180s)</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Max Clips per Compilation</label>
+          <small>1–3 clips combined per post</small>
+        </div>
+        <input type="number" id="s-max_clips_per_compilation" class="cc-input w-auto" min="1" max="3">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Minimum Quality Score</label>
+          <small>Clips scoring below this are skipped (0–100)</small>
+        </div>
+        <input type="number" id="s-minimum_clip_quality_score" class="cc-input w-auto" min="0" max="100">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Minimum Views</label>
+          <small>Skip clips with fewer views (0 = include all)</small>
+        </div>
+        <input type="number" id="s-minimum_views" class="cc-input w-auto" min="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- Posting -->
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-calendar-check"></i> Posting</span></div>
+    <div class="settings-body">
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Posts Per Day</label>
+          <small>1–3 posts per day</small>
+        </div>
+        <input type="number" id="s-post_frequency" class="cc-input w-auto" min="1" max="3">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Default Template</label>
+          <small>Video template 1–4</small>
+        </div>
+        <input type="number" id="s-default_video_template" class="cc-input w-auto" min="1" max="4">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Default Caption Style</label>
+          <small>Caption style 1–4</small>
+        </div>
+        <input type="number" id="s-default_caption_style" class="cc-input w-auto" min="1" max="4">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Require Preview Approval</label>
+          <small>Hold videos for manual review before posting</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-clip_preview_required">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discovery -->
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-search"></i> Discovery</span></div>
+    <div class="settings-body">
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Allow Non-Target Streamers</label>
+          <small>Pull clips from trending streamers globally</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-allow_clips_from_non_target_streamers">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Global Pool Size</label>
+          <small>Number of top streamers in global pool (1–200)</small>
+        </div>
+        <input type="number" id="s-global_pool_size" class="cc-input w-auto" min="1" max="200">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>YouTube Trending</label>
+          <small>Include YouTube trending chart</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-allow_youtube_trending">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>YouTube Lookback Days</label>
+          <small>How far back to look for YouTube videos (1–30)</small>
+        </div>
+        <input type="number" id="s-youtube_lookback_days" class="cc-input w-auto" min="1" max="30">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Enable Twitch</label>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-twitch_enabled">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Enable YouTube</label>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-youtube_enabled">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Captions & AI -->
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-chat-quote"></i> Captions & Features</span></div>
+    <div class="settings-body">
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Animated Captions</label>
+          <small>Word-by-word subtitle animation (requires faster-whisper)</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-animated_captions_enabled">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Animated Caption Style</label>
+          <small>1=Bounce 2=Fade 3=Scale 4=Pop</small>
+        </div>
+        <input type="number" id="s-animated_caption_style" class="cc-input w-auto" min="1" max="4">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Smart Hashtags</label>
+          <small>AI-generated game-specific hashtags</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-smart_hashtags_enabled">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Max Hashtags</label>
+          <small>TikTok recommends 3–8</small>
+        </div>
+        <input type="number" id="s-smart_hashtags_max" class="cc-input w-auto" min="1" max="20">
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>Generate Thumbnails</label>
+          <small>Extract peak-energy frame as cover image</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="s-thumbnail_enabled">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- end tab-preferences -->
+
+<!-- Tab: Blocked Creators -->
+<div id="tab-blocked" style="display:none">
+  <div class="card-cc">
+    <div class="card-header-cc">
+      <span><i class="bi bi-slash-circle"></i> Creator Opt-Out List</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="badge" id="blocked-count">0</span>
+        <button class="btn-primary-cc btn-sm" onclick="showAddModal()">
+          <i class="bi bi-plus-lg"></i> Add Creator
+        </button>
+      </div>
+    </div>
+    <p class="settings-note">
+      Creators on this list will never have their clips included in your pipeline.
+    </p>
+    <div id="blocked-list">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add modal (reused from blocked tab) -->
+<div class="cc-modal" id="add-modal" style="display:none">
+  <div class="cc-modal-box">
+    <div class="cc-modal-header">
+      <span>Block a Creator</span>
+      <button class="btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="cc-modal-body">
+      <label class="form-label">Creator name or username</label>
+      <input type="text" id="new-blocked-name" class="cc-input" placeholder="e.g. xqc" autofocus>
+      <label class="form-label" style="margin-top:.75rem">Platform</label>
+      <select id="new-blocked-platform" class="cc-select">
+        <option value="twitch">Twitch</option>
+        <option value="youtube">YouTube</option>
+      </select>
+      <small>Matching is case-insensitive.</small>
+    </div>
+    <div class="cc-modal-footer">
+      <button class="btn-secondary-cc" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary-cc" onclick="addBlocked()">Block Creator</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #2a2d3e;
+  padding-bottom: 0;
+}
+.stab {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.stab:hover { color: #e2e8f0; }
+.stab.active { color: #6c63ff; border-bottom-color: #6c63ff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-preferences').style.display = name === 'preferences' ? '' : 'none';
+  document.getElementById('tab-blocked').style.display     = name === 'blocked'     ? '' : 'none';
+  document.getElementById('save-btn').style.display        = name === 'preferences' ? '' : 'none';
+  if (name === 'blocked') loadBlocked();
+}
+
+// ── Blocked tab ────────────────────────────────────────────────────────────
+function loadBlocked() {
+  fetch('/api/blocked')
+    .then(r => r.json())
+    .then(list => {
+      document.getElementById('blocked-count').textContent = list.length;
+      if (!list.length) {
+        document.getElementById('blocked-list').innerHTML =
+          '<div class="empty-state">No creators blocked.</div>';
+        return;
+      }
+      document.getElementById('blocked-list').innerHTML = `
+        <table class="cc-table">
+          <thead><tr><th>Creator</th><th>Platform</th><th></th></tr></thead>
+          <tbody>
+            ${list.map(item => `
+              <tr>
+                <td><i class="bi bi-person-slash" style="color:var(--danger);margin-right:.5rem"></i>${escHtmlB(item.name)}</td>
+                <td><span class="platform-tag ${item.platform}">${item.platform}</span></td>
+                <td style="text-align:right">
+                  <button class="btn-xs danger" onclick="removeBlocked('${escHtmlB(item.name)}','${escHtmlB(item.platform)}')">Remove</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    });
+}
+
+function removeBlocked(name, platform) {
+  if (!confirm(`Remove "${name}" from the blocked list?`)) return;
+  fetch(`/api/blocked/${encodeURIComponent(name)}?platform=${platform}`, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(d => { showToast(d.ok ? 'Removed' : d.error, d.ok ? 'success' : 'error'); loadBlocked(); });
+}
+
+function showAddModal() {
+  document.getElementById('add-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('new-blocked-name').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('add-modal').style.display = 'none';
+  document.getElementById('new-blocked-name').value = '';
+}
+
+function addBlocked() {
+  const name     = document.getElementById('new-blocked-name').value.trim();
+  const platform = document.getElementById('new-blocked-platform').value;
+  if (!name) return;
+  fetch('/api/blocked', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, platform }),
+  }).then(r => r.json()).then(d => {
+    showToast(d.ok ? `Blocked "${name}"` : d.error, d.ok ? 'success' : 'error');
+    closeModal();
+    loadBlocked();
+  });
+}
+
+document.getElementById('add-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('add-modal')) closeModal();
+});
+
+function escHtmlB(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ── Preferences tab ────────────────────────────────────────────────────────
+// Map of setting id → type
+const BOOL_KEYS = [
+  'clip_preview_required', 'allow_clips_from_non_target_streamers',
+  'allow_youtube_trending', 'youtube_global_pool_enabled',
+  'twitch_enabled', 'youtube_enabled', 'animated_captions_enabled',
+  'smart_hashtags_enabled', 'thumbnail_enabled', 'learning_enabled',
+];
+
+function loadSettings() {
+  fetch('/api/settings')
+    .then(r => r.json())
+    .then(prefs => {
+      for (const [key, val] of Object.entries(prefs)) {
+        const el = document.getElementById('s-' + key);
+        if (!el) continue;
+        if (el.type === 'checkbox') el.checked = !!val;
+        else el.value = val;
+      }
+    })
+    .catch(e => showToast('Could not load settings: ' + e, 'error'));
+}
+
+function saveSettings() {
+  const data = {};
+  document.querySelectorAll('[id^="s-"]').forEach(el => {
+    const key = el.id.replace(/^s-/, '');
+    if (el.type === 'checkbox') data[key] = el.checked;
+    else if (el.type === 'number') data[key] = Number(el.value);
+    else data[key] = el.value;
+  });
+
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data),
+  }).then(r => r.json()).then(d => {
+    showToast(d.ok ? 'Settings saved!' : (d.error || 'Error'), d.ok ? 'success' : 'error');
+  });
+}
+
+loadSettings();
+</script>
+{% endblock %}

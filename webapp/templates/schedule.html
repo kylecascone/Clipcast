@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule — ClipCast Studio{% endblock %}
+{% block page_title %}Schedule{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn-secondary-cc" onclick="loadSchedule()">
+    <i class="bi bi-arrow-counterclockwise"></i> Reset
+  </button>
+  <button class="btn-primary-cc" onclick="saveSchedule()">
+    <i class="bi bi-floppy"></i> Save Schedule
+  </button>
+{% endblock %}
+
+{% block content %}
+<p style="color:#a0a8c0;margin-bottom:20px;font-size:14px;">Set what content posts on each day and time</p>
+
+<div class="schedule-grid" id="scheduleGrid">
+  <!-- 7 day columns rendered by JS -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.day-column {
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a0a8c0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #2a2d3e;
+  margin-bottom: 2px;
+}
+
+.slot-card {
+  background: #12141f;
+  border: 1px solid #2a2d3e;
+  border-radius: 8px;
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  position: relative;
+}
+
+.slot-card select,
+.slot-card input[type="time"] {
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
+  border-radius: 6px;
+  color: #e0e4f0;
+  padding: 5px 8px;
+  font-size: 12px;
+  width: 100%;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.slot-card select:focus,
+.slot-card input[type="time"]:focus {
+  border-color: #6c63ff;
+}
+
+.slot-card select option {
+  background: #1a1d2e;
+  color: #e0e4f0;
+}
+
+.platform-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.platform-btn {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid #2a2d3e;
+  background: #1a1d2e;
+  color: #a0a8c0;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.platform-btn.active {
+  background: #6c63ff;
+  border-color: #6c63ff;
+  color: #fff;
+}
+
+.platform-btn:hover:not(.active) {
+  border-color: #6c63ff;
+  color: #e0e4f0;
+}
+
+.delete-slot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #ff5555;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 3px;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+
+.delete-slot:hover {
+  opacity: 1;
+}
+
+.add-slot-btn {
+  margin-top: auto;
+  padding: 8px;
+  background: none;
+  border: 1px dashed #2a2d3e;
+  border-radius: 8px;
+  color: #6c63ff;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+
+.add-slot-btn:hover {
+  border-color: #6c63ff;
+  background: rgba(108,99,255,0.08);
+}
+
+.slot-label {
+  font-size: 11px;
+  color: #6a708a;
+  margin-bottom: -3px;
+}
+
+.score-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.score-slider label {
+  font-size: 11px;
+  color: #6a708a;
+}
+</style>
+
+<script>
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const CONTENT_TYPES = [
+  'Any','Gaming','Just Chatting','IRL','Sports',
+  'Funny','Rage','Fail','Wholesome','Public Freakout'
+];
+
+let creators = [];
+let schedule = {};
+
+async function init() {
+  try {
+    const res = await fetch('/api/creators');
+    creators = await res.json();
+  } catch(e) {
+    creators = [];
+  }
+  await loadSchedule();
+}
+
+async function loadSchedule() {
+  try {
+    const res = await fetch('/api/schedule');
+    schedule = await res.json();
+  } catch(e) {
+    schedule = {};
+  }
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = '';
+
+  DAYS.forEach(day => {
+    const col = document.createElement('div');
+    col.className = 'day-column';
+
+    const header = document.createElement('div');
+    header.className = 'day-header';
+    header.textContent = day.slice(0, 3);
+    col.appendChild(header);
+
+    const slots = schedule[day] || [];
+    slots.forEach((slot, i) => col.appendChild(makeSlotCard(day, i, slot)));
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-slot-btn';
+    addBtn.innerHTML = '+ Add Slot';
+    addBtn.onclick = () => addSlot(day);
+    col.appendChild(addBtn);
+
+    grid.appendChild(col);
+  });
+}
+
+function makeSlotCard(day, index, slot) {
+  slot = slot || {};
+  const card = document.createElement('div');
+  card.className = 'slot-card';
+
+  const creatorOptions = ['<option value="">Any Creator</option>']
+    .concat(creators.slice(0, 150).map(c =>
+      `<option value="${escHtml(c.name)}"${slot.creator === c.name ? ' selected' : ''}>${escHtml(c.name)}</option>`
+    )).join('');
+
+  const typeOptions = CONTENT_TYPES.map(t =>
+    `<option value="${t}"${slot.content_type === t ? ' selected' : ''}>${t}</option>`
+  ).join('');
+
+  const platform = slot.platform || 'both';
+
+  card.innerHTML = `
+    <button class="delete-slot" title="Remove slot" onclick="removeSlot('${escAttr(day)}',${index})">✕</button>
+    <div class="slot-label">Time</div>
+    <input type="time" value="${slot.time || '12:00'}"
+      onchange="updateSlot('${escAttr(day)}',${index},'time',this.value)">
+    <div class="slot-label">Creator</div>
+    <select onchange="updateSlot('${escAttr(day)}',${index},'creator',this.value)">
+      ${creatorOptions}
+    </select>
+    <div class="slot-label">Content type</div>
+    <select onchange="updateSlot('${escAttr(day)}',${index},'content_type',this.value)">
+      ${typeOptions}
+    </select>
+    <div class="slot-label">Platform</div>
+    <div class="platform-toggle">
+      <button class="platform-btn${platform==='tiktok'?' active':''}"
+        onclick="setPlatform('${escAttr(day)}',${index},'tiktok',this)">TikTok</button>
+      <button class="platform-btn${platform==='youtube'?' active':''}"
+        onclick="setPlatform('${escAttr(day)}',${index},'youtube',this)">YouTube</button>
+      <button class="platform-btn${platform==='both'?' active':''}"
+        onclick="setPlatform('${escAttr(day)}',${index},'both',this)">Both</button>
+    </div>
+    <div class="score-slider">
+      <label>Min Score: <span id="score-val-${escAttr(day)}-${index}">${slot.min_score || 0}</span></label>
+      <input type="range" min="0" max="100" value="${slot.min_score || 0}"
+        oninput="document.getElementById('score-val-${escAttr(day)}-${index}').textContent=this.value; updateSlot('${escAttr(day)}',${index},'min_score',parseInt(this.value))"
+        style="width:100%;accent-color:#6c63ff;">
+    </div>`;
+
+  return card;
+}
+
+function addSlot(day) {
+  if (!schedule[day]) schedule[day] = [];
+  schedule[day].push({ time: '12:00', creator: '', content_type: 'Any', platform: 'both' });
+  renderGrid();
+}
+
+function removeSlot(day, index) {
+  if (schedule[day]) schedule[day].splice(index, 1);
+  renderGrid();
+}
+
+function updateSlot(day, index, field, value) {
+  if (!schedule[day]) schedule[day] = [];
+  if (!schedule[day][index]) schedule[day][index] = {};
+  schedule[day][index][field] = value;
+}
+
+function setPlatform(day, index, platform, btn) {
+  updateSlot(day, index, 'platform', platform);
+  btn.closest('.platform-toggle').querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function saveSchedule() {
+  try {
+    const res = await fetch('/api/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(schedule)
+    });
+    const data = await res.json();
+    if (data.ok) showToast('Schedule saved!', 'success');
+    else showToast('Save failed: ' + (data.error || 'unknown'), 'error');
+  } catch(e) {
+    showToast('Save failed: ' + e, 'error');
+  }
+}
+
+function showToast(msg, type) {
+  const bg = type === 'error' ? '#e05260' : '#6c63ff';
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;bottom:24px;right:24px;background:${bg};color:#fff;` +
+    `padding:12px 20px;border-radius:8px;font-size:14px;z-index:9999;` +
+    `box-shadow:0 4px 16px rgba(0,0,0,0.4);`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/'/g,"\\'");
+}
+
+init();
+</script>
+{% endblock %}

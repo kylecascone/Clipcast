@@ -1,0 +1,40 @@
+# ClipCast Studio — Python Dependencies
+# Tested on Python 3.11, macOS (Apple Silicon and Intel)
+# Install all at once with:  pip install -r requirements.txt
+#
+# Additional system dependencies (not pip):
+#   FFmpeg: brew install ffmpeg  (macOS)
+#           sudo apt install ffmpeg  (Linux)
+
+# ── API / Networking ──────────────────────────────────────────────────────────
+requests>=2.31.0,<3.0.0
+
+# ── Config parsing ────────────────────────────────────────────────────────────
+PyYAML>=6.0.1,<7.0.0
+
+# ── Video download ────────────────────────────────────────────────────────────
+yt-dlp>=2024.1.0
+
+# ── Video editing ─────────────────────────────────────────────────────────────
+# Pin to 1.x — moviepy 2.x has breaking API changes and is not yet stable.
+moviepy>=1.0.3,<2.0.0
+imageio>=2.25.0,<2.34.0  # moviepy 1.x compatibility window
+imageio-ffmpeg>=0.4.9
+Pillow>=10.2.0,<11.0.0   # Image manipulation (overlays, gradients, borders)
+numpy>=1.24.0,<2.0.0     # Pin below 2.x for moviepy 1.x compatibility
+
+# ── Audio transcription (runs locally — no API key needed) ────────────────────
+# faster-whisper replaces openai-whisper.
+# Benefits: no PyTorch, no llvmlite/numba, ~4x faster, less RAM, Python 3.11 clean.
+# Uses CTranslate2 (C++ inference engine) with pre-quantized Whisper weights.
+# First run downloads the model weights (~150MB for "base") from Hugging Face.
+faster-whisper>=1.0.0
+
+# ── File monitoring ───────────────────────────────────────────────────────────
+watchdog>=3.0.0,<5.0.0   # Watches clips/manual/ for new files
+
+# ── Task scheduling ───────────────────────────────────────────────────────────
+schedule>=1.2.1,<2.0.0   # Simple in-process scheduler for the 6-hour pipeline loop
+
+# ── Terminal UI ───────────────────────────────────────────────────────────────
+rich>=13.7.0,<14.0.0     # Formatted tables, colored output, panels, progress bars

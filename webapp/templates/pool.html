@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Clip Pool — ClipCast Studio{% endblock %}
+{% block page_title %}Clip Pool{% endblock %}
+
+{% block topbar_actions %}
+  <select id="pool-source-filter" class="cc-select w-auto" onchange="loadPool()">
+    <option value="">All Sources</option>
+    <option value="twitch">Twitch</option>
+    <option value="youtube">YouTube</option>
+  </select>
+  <button class="btn-secondary-cc" onclick="loadPool()">
+    <i class="bi bi-arrow-clockwise"></i> Refresh
+  </button>
+  <button class="btn-primary-cc" onclick="triggerRefresh()">
+    <i class="bi bi-cloud-download"></i> Fetch New Clips
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="pool-stats-bar" id="pool-stats-bar">
+  <span id="pool-count">Loading...</span>
+</div>
+
+<div class="pool-grid" id="pool-grid">
+  <div class="empty-state">Loading clip pool...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadPool() {
+  const source = document.getElementById('pool-source-filter').value;
+  const url = `/api/pool?limit=100${source ? '&source=' + source : ''}`;
+  fetch(url)
+    .then(r => r.json())
+    .then(items => {
+      document.getElementById('pool-count').textContent = `${items.length} clips`;
+      if (!items.length) {
+        document.getElementById('pool-grid').innerHTML = '<div class="empty-state">No clips in pool. Click "Fetch New Clips" to populate.</div>';
+        return;
+      }
+      document.getElementById('pool-grid').innerHTML = items.map(clip => `
+        <div class="pool-card">
+          <div class="pool-thumb ${clip.source}">
+            ${clip.thumbnail_url
+              ? `<img src="${clip.thumbnail_url}" alt="" onerror="this.style.display='none'">`
+              : `<div class="pool-no-thumb"><i class="bi bi-play-circle"></i></div>`
+            }
+            <span class="pool-source-tag ${clip.source}">${clip.source}</span>
+          </div>
+          <div class="pool-body">
+            <div class="pool-title" title="${escHtml(clip.title || '')}">${escHtml((clip.title || 'Untitled').slice(0, 55))}</div>
+            <div class="pool-creator">${escHtml(clip.creator_name || '—')}</div>
+            <div class="pool-meta">
+              <span><i class="bi bi-eye"></i> ${fmtNum(clip.view_count)}</span>
+              <span><i class="bi bi-clock"></i> ${fmtDur(clip.duration)}</span>
+              ${clip.score ? `<span class="score-badge">${Math.round(clip.score)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    });
+}
+
+function triggerRefresh() {
+  fetch('/api/refresh-pool', {method: 'POST'})
+    .then(r => r.json())
+    .then(d => showToast(d.error || 'Pool refresh started!', d.error ? 'error' : 'success'));
+}
+
+function fmtNum(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function fmtDur(s) {
+  if (!s) return '—';
+  const m = Math.floor(s / 60), sec = Math.round(s % 60);
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+loadPool();
+</script>
+{% endblock %}

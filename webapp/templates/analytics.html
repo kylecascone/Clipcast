@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics — ClipCast Studio{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn-secondary-cc" onclick="loadAnalytics()">
+    <i class="bi bi-arrow-clockwise"></i> Refresh
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="two-col">
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-eye"></i> Views Over Time</span></div>
+    <div class="chart-wrapper">
+      <canvas id="views-chart"></canvas>
+    </div>
+  </div>
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-heart"></i> Engagement Breakdown</span></div>
+    <div class="chart-wrapper">
+      <canvas id="engagement-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="card-cc" style="margin-top:1.5rem">
+  <div class="card-header-cc">
+    <span><i class="bi bi-table"></i> Post History</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="cc-table">
+      <thead>
+        <tr><th>Title</th><th>Platform</th><th>Views</th><th>Likes</th><th>Shares</th><th>Date</th></tr>
+      </thead>
+      <tbody id="analytics-body">
+        <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let viewsChart, engagementChart;
+
+function initCharts() {
+  const chartOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#b0b0cc' } } },
+    scales: {
+      x: { ticks: { color: '#b0b0cc' }, grid: { color: '#2a2a40' } },
+      y: { ticks: { color: '#b0b0cc' }, grid: { color: '#2a2a40' } },
+    },
+  };
+
+  viewsChart = new Chart(document.getElementById('views-chart'), {
+    type: 'line',
+    data: { labels: [], datasets: [{ label: 'Views', data: [], borderColor: '#6c63ff', tension: 0.4, fill: true, backgroundColor: 'rgba(108,99,255,0.15)' }] },
+    options: chartOpts,
+  });
+
+  engagementChart = new Chart(document.getElementById('engagement-chart'), {
+    type: 'bar',
+    data: {
+      labels: ['Likes', 'Shares', 'Comments'],
+      datasets: [{ label: 'Total', data: [0, 0, 0], backgroundColor: ['#6c63ff', '#00d4ff', '#ff6584'] }],
+    },
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, beginAtZero: true } } },
+  });
+}
+
+function loadAnalytics() {
+  fetch('/api/analytics')
+    .then(r => r.json())
+    .then(items => {
+      if (items.error) { document.getElementById('analytics-body').innerHTML = `<tr><td colspan="6" class="empty-state">${items.error}</td></tr>`; return; }
+      if (!items.length) { document.getElementById('analytics-body').innerHTML = '<tr><td colspan="6" class="empty-state">No analytics data yet. Post some videos first.</td></tr>'; return; }
+
+      // Table
+      document.getElementById('analytics-body').innerHTML = items.map(r => `
+        <tr>
+          <td>${r.clip_title || '—'}</td>
+          <td><span class="platform-tag ${r.platform}">${r.platform}</span></td>
+          <td>${(r.views||0).toLocaleString()}</td>
+          <td>${(r.likes||0).toLocaleString()}</td>
+          <td>${(r.shares||0).toLocaleString()}</td>
+          <td>${(r.fetched_at||'').slice(0,10)}</td>
+        </tr>
+      `).join('');
+
+      // Charts
+      const labels  = items.slice(0, 10).map(r => (r.clip_title || '').slice(0, 15));
+      const views   = items.slice(0, 10).map(r => r.views || 0);
+      const totLikes   = items.reduce((s, r) => s + (r.likes   || 0), 0);
+      const totShares  = items.reduce((s, r) => s + (r.shares  || 0), 0);
+      const totComments = items.reduce((s, r) => s + (r.comments || 0), 0);
+
+      viewsChart.data.labels = labels;
+      viewsChart.data.datasets[0].data = views;
+      viewsChart.update();
+
+      engagementChart.data.datasets[0].data = [totLikes, totShares, totComments];
+      engagementChart.update();
+    });
+}
+
+initCharts();
+loadAnalytics();
+</script>
+{% endblock %}

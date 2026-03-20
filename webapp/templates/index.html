@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — ClipCast Studio{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn-primary-cc" id="btn-run-test" onclick="runPipeline('test')">
+    <i class="bi bi-play-fill"></i> Test Run
+  </button>
+  <button class="btn-secondary-cc" id="btn-run-live" onclick="runPipeline('run')">
+    <i class="bi bi-lightning-fill"></i> Post Now
+  </button>
+  <button class="btn-secondary-cc" onclick="refreshPool()">
+    <i class="bi bi-arrow-clockwise"></i> Refresh Pool
+  </button>
+{% endblock %}
+
+{% block content %}
+<!-- Stats row -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon"><i class="bi bi-collection-play"></i></div>
+    <div class="stat-body">
+      <div class="stat-value" id="stat-pool">—</div>
+      <div class="stat-label">Clips in Pool</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="bi bi-clock-history"></i></div>
+    <div class="stat-body">
+      <div class="stat-value" id="stat-queue">—</div>
+      <div class="stat-label">Queued Posts</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-body">
+      <div class="stat-value" id="stat-today">—</div>
+      <div class="stat-label">Posted Today</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan"><i class="bi bi-film"></i></div>
+    <div class="stat-body">
+      <div class="stat-value" id="stat-processed">—</div>
+      <div class="stat-label">Videos Processed</div>
+    </div>
+  </div>
+</div>
+
+<!-- Two-column layout -->
+<div class="two-col">
+  <!-- Log feed -->
+  <div class="card-cc log-card">
+    <div class="card-header-cc">
+      <span><i class="bi bi-terminal"></i> Live Log</span>
+      <button class="btn-xs" onclick="clearLog()">Clear</button>
+    </div>
+    <div class="log-feed" id="log-feed">
+      <div class="log-line info">Waiting for pipeline activity...</div>
+    </div>
+  </div>
+
+  <!-- Recent videos -->
+  <div class="card-cc">
+    <div class="card-header-cc">
+      <span><i class="bi bi-film"></i> Recent Videos</span>
+    </div>
+    <div id="recent-videos">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function runPipeline(mode) {
+  if (window._pipelineRunning) return;
+  fetch('/api/run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({mode})
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(d.error, 'error');
+    else showToast(`Pipeline started (${mode})`, 'success');
+  });
+}
+
+function refreshPool() {
+  if (window._pipelineRunning) return;
+  fetch('/api/refresh-pool', {method: 'POST'})
+    .then(r => r.json())
+    .then(d => showToast(d.error || 'Pool refresh started', d.error ? 'error' : 'success'));
+}
+
+function loadRecentVideos() {
+  fetch('/api/processed-videos')
+    .then(r => r.json())
+    .then(videos => {
+      const el = document.getElementById('recent-videos');
+      if (!videos.length) {
+        el.innerHTML = '<div class="empty-state">No processed videos yet</div>';
+        return;
+      }
+      el.innerHTML = videos.map(v => `
+        <div class="video-row">
+          <div class="video-icon"><i class="bi bi-file-play"></i></div>
+          <div class="video-info">
+            <div class="video-name">${v.name}</div>
+            <div class="video-meta">${v.size_mb} MB &bull; ${v.modified}</div>
+          </div>
+        </div>
+      `).join('');
+    });
+}
+
+loadRecentVideos();
+setInterval(loadRecentVideos, 15000);
+</script>
+{% endblock %}

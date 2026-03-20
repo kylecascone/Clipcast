@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Editor — ClipCast Studio{% endblock %}
+{% block page_title %}Custom Editor{% endblock %}
+
+{% block content %}
+<div class="two-col">
+  <!-- Left: Submit -->
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-link-45deg"></i> Submit a Clip</span></div>
+    <div class="editor-form">
+      <div class="form-group">
+        <label class="form-label">Twitch or YouTube URL</label>
+        <input type="url" id="clip-url" class="cc-input" placeholder="https://www.twitch.tv/.../clip/... or YouTube URL">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Video Template</label>
+        <div class="template-grid">
+          <label class="template-card selected" data-val="1">
+            <input type="radio" name="template" value="1" checked hidden>
+            <div class="template-num">1</div>
+            <div class="template-desc">Full-screen + credit card</div>
+          </label>
+          <label class="template-card" data-val="2">
+            <input type="radio" name="template" value="2" hidden>
+            <div class="template-num">2</div>
+            <div class="template-desc">Split-screen with chat</div>
+          </label>
+          <label class="template-card" data-val="3">
+            <input type="radio" name="template" value="3" hidden>
+            <div class="template-num">3</div>
+            <div class="template-desc">Cinematic bars</div>
+          </label>
+          <label class="template-card" data-val="4">
+            <input type="radio" name="template" value="4" hidden>
+            <div class="template-num">4</div>
+            <div class="template-desc">Minimal clean</div>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Caption Style</label>
+        <select id="caption-style" class="cc-select">
+          <option value="1">Style 1 — Hype</option>
+          <option value="2">Style 2 — Clean</option>
+          <option value="3">Style 3 — Minimal</option>
+          <option value="4">Style 4 — Question</option>
+        </select>
+      </div>
+
+      <button class="btn-primary-cc full-width" id="submit-btn" onclick="submitClip()">
+        <i class="bi bi-play-circle"></i> Process Clip
+      </button>
+    </div>
+  </div>
+
+  <!-- Right: Progress + output -->
+  <div class="card-cc">
+    <div class="card-header-cc"><span><i class="bi bi-terminal"></i> Processing Log</span></div>
+    <div class="log-feed" id="editor-log">
+      <div class="log-line info">Submit a clip URL to begin...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Template card selection
+document.querySelectorAll('.template-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    card.querySelector('input[type=radio]').checked = true;
+  });
+});
+
+function submitClip() {
+  const url = document.getElementById('clip-url').value.trim();
+  if (!url) { showToast('Please enter a URL', 'error'); return; }
+  if (window._pipelineRunning) { showToast('Pipeline already running', 'error'); return; }
+
+  const editorLog = document.getElementById('editor-log');
+  editorLog.innerHTML = '';
+
+  fetch('/api/manual', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({url}),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(d.error, 'error');
+    else showToast('Processing started!', 'success');
+  });
+}
+
+// Mirror the global log feed to the editor log when active
+const origAppendLog = window.appendLog;
+const editorActive = () => document.getElementById('editor-log') !== null;
+</script>
+{% endblock %}

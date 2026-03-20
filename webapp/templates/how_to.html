@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}How To — ClipCast Studio{% endblock %}
+{% block page_title %}How To{% endblock %}
+
+{% block content %}
+<p style="color:#6b7280;font-size:14px;margin-bottom:28px;">Get up and running in under 5 minutes</p>
+
+<div class="howto-steps">
+
+  <div class="step-card">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <h3>Connect Your Accounts</h3>
+      <p>Go to the <a href="/accounts">Accounts</a> page and connect your TikTok, YouTube, and Instagram accounts. You'll need your session cookies from each platform.</p>
+      <div class="step-tip">Tip: Use browser dev tools → Application → Cookies to find your sessionid cookie</div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <h3>Refresh Your Clip Pool</h3>
+      <p>Click <strong>Refresh Pool</strong> on the Dashboard. ClipCast will automatically discover viral clips from Reddit, YouTube, and Twitch and score them by viral potential.</p>
+      <div class="step-tip">Tip: Run a refresh every day to keep your pool fresh. Aim for 200+ clips in the pool.</div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h3>Set Your Posting Schedule</h3>
+      <p>Go to the <a href="/schedule">Schedule</a> page and add time slots for each day. Set which creator or content type you want for each slot, which platforms to post to, and a minimum quality score.</p>
+      <div class="step-tip">Tip: Start with 2–3 posts per day. Consistency beats volume when building a new account.</div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <h3>Run a Test</h3>
+      <p>Click <strong>Test Run</strong> on the Dashboard. ClipCast will process 3 clips without posting them so you can review the output videos before going live.</p>
+      <div class="step-tip">Tip: Check the processed videos in the Recent Videos section on the Dashboard.</div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <h3>Go Live</h3>
+      <p>Click <strong>Post Now</strong> to run the full pipeline and post immediately, or let the schedule run automatically at your set times.</p>
+      <div class="step-tip">Tip: Monitor your Analytics page after the first week to see which content is performing best.</div>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="faq-title">Frequently Asked Questions</h2>
+
+<div class="faq-list">
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      How often should I refresh the clip pool?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">Refresh once or twice a day. ClipCast automatically deduplicates clips so running it more often just keeps the pool topped up with fresh viral content.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      How many posts per day should I schedule?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">Start with 3–4 posts per day spread out across morning, afternoon, and evening. TikTok and YouTube Shorts reward consistency. Once your accounts are established you can scale to 6–8 per day.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      What minimum quality score should I use?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">Set minimum score to 50 when starting out so you have enough clips to fill your schedule. As your pool grows you can raise it to 65–70 to only post the best content.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      Will my accounts get banned for posting clips?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">ClipCast includes a DMCA music detector that flags clips with copyrighted music before posting. Clips with harmful or inappropriate content are filtered automatically. Still, always review your content and follow each platform's community guidelines.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      How does the AI quality scoring work?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">Every clip gets scored 0–100 based on viral potential (views, upvotes, source), AI quality analysis (self-contained, entertaining, TikTok fit), and freshness. The AI also rewrites clip titles to be more engaging and TikTok-ready.</div>
+  </div>
+
+</div>
+
+<style>
+.howto-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 40px;
+}
+
+.step-card {
+  display: flex;
+  gap: 20px;
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
+  border-radius: 14px;
+  padding: 22px 24px;
+  align-items: flex-start;
+  transition: border-color 0.2s;
+}
+
+.step-card:hover { border-color: rgba(108,99,255,0.3); }
+
+.step-number {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.step-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 8px 0;
+}
+
+.step-content p {
+  font-size: 14px;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+}
+
+.step-content a { color: #6c63ff; text-decoration: none; }
+.step-content a:hover { text-decoration: underline; }
+
+.step-tip {
+  font-size: 13px;
+  color: #6b7280;
+  background: rgba(108,99,255,0.07);
+  border-left: 3px solid #6c63ff;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+}
+
+.faq-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 16px 0;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faq-item {
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.faq-question {
+  padding: 15px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #e2e8f0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.faq-question:hover { background: rgba(255,255,255,0.03); }
+
+.faq-arrow {
+  font-size: 13px;
+  color: #6b7280;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.faq-answer {
+  display: none;
+  padding: 14px 20px 16px;
+  font-size: 14px;
+  color: #9ca3af;
+  line-height: 1.6;
+  border-top: 1px solid #2a2d3e;
+}
+
+.faq-item.open .faq-arrow   { transform: rotate(180deg); }
+.faq-item.open .faq-answer  { display: block; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleFaq(el) {
+  el.closest('.faq-item').classList.toggle('open');
+}
+</script>
+{% endblock %}

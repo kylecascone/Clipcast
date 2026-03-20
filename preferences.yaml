@@ -1,0 +1,127 @@
+ai_scorer_enabled: true
+allow_clips_from_non_target_streamers: false
+allow_short_clips: true
+allow_youtube_trending: false
+animated_caption_font_size: 80
+animated_caption_style: 1
+animated_captions_enabled: true
+attribution_format: standard
+best_post_hours: []
+branding:
+  channel_name_position: bottom_left
+  channel_name_text: ''
+  show_channel_name: false
+  watermark_image: ''
+  watermark_opacity: 0.7
+  watermark_position: bottom_right
+clip_length: medium
+clip_preview_required: false
+clip_reservation_hours: 48
+custom_editor_auto_queue: false
+custom_editor_default_template: 1
+custom_editor_output_quality: medium
+default_caption_style: 1
+default_video_template: 1
+global_pool_size: 50
+intro_clip_path: ''
+kick_enabled: true
+learning_enabled: true
+learning_lookback_days: 30
+manual_mode_default_template: 1
+manual_mode_posting_behavior: scheduled
+max_clips_per_compilation: 1
+minimum_clip_quality_score: 25
+minimum_views: 0
+outro_clip_path: ''
+pool_refresh_interval_hours: 6
+post_frequency: 2
+posting_times:
+- 09:00
+- '18:00'
+preferred_language: en
+smart_hashtags_enabled: true
+smart_hashtags_max: 10
+target_games: []
+target_platforms:
+- tiktok
+- youtube_shorts
+target_streamers:
+- xqc
+- kai_cenat
+- jynxzi
+- caseoh_
+- hasanabi
+- nickmercs
+- shroud
+- summit1g
+- sodapoppin
+- lirik
+- ishowspeed
+- adinross
+- moistcr1tikal
+- pokimane
+- trainwreckstv
+- mizkif
+- nmplol
+- emiru
+- forsen
+- qtcinderella
+- destiny
+- timthetatman
+- drlupo
+- nickeh30
+- myth
+- tfue
+- cloakzy
+- symfuhny
+- nadeshot
+- courage
+- highdistortion
+- dragonarius
+- loltyler1
+- trick2g
+- yassuo
+- doublelift
+- imaqtpie
+- alinity
+- amouranth
+- fuslie
+- nymn
+- tarik
+- ohnepixel
+- s1mple
+- autimatic
+- stewie2k
+target_youtube_channels:
+- UCX6OQ3DkcsbYNE6H8uQQuVA
+- UCkS_HP3m9L4I3bI_hPCVMKA
+- UCG0MgGnAZEAKMGJNLeDn9gA
+- UC3gNmTGu-TTbFPpfSe5f9uA
+- UCpqXJOEqGS-TCnazcHCo0rA
+- UC7_YgWpupZT9xMYMZaVd7YA
+- UCYVinkwSX7szARULgYpgbDQ
+- UCxRdHsGBYEFuVqCiDMbmYEA
+- UCt6UPiZ8e_2bNmDg_0Uz1kg
+- UCLiMO3KQNM7M2tnRDOQDuRg
+- UCyB4MHYpBMHIXPyXBMtCFkQ
+- UCPvg6WWxOHHaLcBMzBjXYYA
+- UCnUYZLuoy1rq1aVMwx4sFsA
+- UCRBMbbQGiFDUGEGbcBmyjbQ
+- UCYzPXprvl5Y-Sf0g4vX-m6g
+- UC-lHJZR3Gqxm24_Vd_AJ5Yw
+- UCTkXRDQl0luXxVQrRQvWS6w
+- UCq6VFHwMzcMXbuKyG7SQYIg
+- UC1JTQBa5QxZCpXrFSkMxmPw
+- UCWsDFcIhY2DBi3GB5uykGXA
+thumbnail_enabled: true
+twitch_enabled: true
+use_shared_pool: true
+youtube_enabled: true
+youtube_global_pool_enabled: false
+youtube_lookback_days: 14
+youtube_pool_search_queries:
+- xqc funny moments clip
+- kai cenat viral clip
+- twitch streamer funny reaction
+- gaming insane clip highlight
+- streamer rage quit funny
