@@ -825,7 +825,7 @@ def _bootstrap_railway() -> None:
 
     # ── 4. Database + auto-consent ────────────────────────────────────────────
     try:
-        from database import initialize_database, has_consented, record_consent
+        from database import initialize_database, has_consented, record_consent, get_connection
         initialize_database()
         print(f"  [ok]     database initialised")
         if not has_consented(user_id=1, version="1.0"):
@@ -835,6 +835,31 @@ def _bootstrap_railway() -> None:
             print(f"  [ok]     ToS consent already on record")
     except Exception as exc:
         print(f"  [warn]   Database init issue: {exc}")
+
+    # ── 5. Purge Mac-path queue items (opt-in via PURGE_OLD_QUEUE=true) ────────
+    if os.environ.get("PURGE_OLD_QUEUE", "").lower() == "true":
+        try:
+            conn = get_connection()
+            cur = conn.execute(
+                """SELECT COUNT(*) FROM posting_queue q
+                   JOIN packages p ON p.package_id = q.package_id
+                   WHERE q.status = 'pending'
+                   AND p.compiled_path LIKE '/Users/%'"""
+            )
+            count = cur.fetchone()[0]
+            conn.execute(
+                """DELETE FROM posting_queue WHERE queue_id IN (
+                       SELECT q.queue_id FROM posting_queue q
+                       JOIN packages p ON p.package_id = q.package_id
+                       WHERE q.status = 'pending'
+                       AND p.compiled_path LIKE '/Users/%'
+                   )"""
+            )
+            conn.commit()
+            conn.close()
+            print(f"  [purge]  deleted {count} pending queue item(s) with Mac local paths")
+        except Exception as exc:
+            print(f"  [warn]   Queue purge failed: {exc}")
 
     print("=" * 60)
 
