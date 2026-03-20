@@ -38,3 +38,16 @@ schedule>=1.2.1,<2.0.0   # Simple in-process scheduler for the 6-hour pipeline l
 
 # ── Terminal UI ───────────────────────────────────────────────────────────────
 rich>=13.7.0,<14.0.0     # Formatted tables, colored output, panels, progress bars
+
+# ── Web UI ────────────────────────────────────────────────────────────────────
+flask>=3.0.0,<4.0.0
+flask-socketio>=5.3.0,<6.0.0
+eventlet>=0.36.0
+
+# ── Google / YouTube API ──────────────────────────────────────────────────────
+google-auth>=2.29.0
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.128.0
+
+# ── Anthropic / Claude API ────────────────────────────────────────────────────
+anthropic>=0.25.0
