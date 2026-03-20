@@ -90,12 +90,23 @@ def find_font() -> Optional[str]:
             "/Library/Fonts/Arial.ttf",
         ]
     else:
+        import os as _os
+
+        # Debug: map the font landscape on this system (Railway logs will show this)
+        all_ttf = glob.glob("/nix/store/**/*.ttf", recursive=True)
+        print(f"FONT DEBUG: found {len(all_ttf)} TTF files on system", flush=True)
+        if all_ttf:
+            print(f"FONT DEBUG: first 5: {all_ttf[:5]}", flush=True)
+        for p in ["/usr/share/fonts", "/nix/store", "/run/current-system"]:
+            print(f"FONT DEBUG: {p} exists: {_os.path.exists(p)}", flush=True)
+
         # Railway Nixpacks installs fonts under a hashed /nix/store path —
         # search dynamically first since the hash changes between builds.
         nix_fonts = glob.glob(
             "/nix/store/*/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         )
         if nix_fonts:
+            print(f"FONT DEBUG: using nix_fonts[0] = {nix_fonts[0]}", flush=True)
             return nix_fonts[0]
 
         # Linux / Railway fallback candidates (distro or alternate Nix layouts)
@@ -107,6 +118,8 @@ def find_font() -> Optional[str]:
             "/usr/share/fonts/liberation/LiberationSans-Bold.ttf",
             "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
         ]
+        for p in candidates:
+            print(f"FONT DEBUG: candidate {p} exists: {_os.path.exists(p)}", flush=True)
     return next((p for p in candidates if Path(p).exists()), None)
 
 
