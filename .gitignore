@@ -1,24 +1,8 @@
-# ── NEVER commit these ────────────────────────────────────────────────────────
-config.yaml           # Contains your API keys and OAuth tokens
-clipcast.db           # Local database (contains private clip data)
-clipcast.log          # Log file
-caption_state.json    # Session rotation state
-
-# ── Generated video files ─────────────────────────────────────────────────────
-clips/raw/
-clips/processed/
-clips/compiled/
-clips/manual/
-
-# ── Python ────────────────────────────────────────────────────────────────────
+youtube_token.pickle
+youtube_credentials.json
+*.mp4
+clips/
 __pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-env/
-
-# ── macOS ─────────────────────────────────────────────────────────────────────
-.DS_Store
+*.pyc
+.env
+accounts.yaml
