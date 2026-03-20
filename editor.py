@@ -523,6 +523,10 @@ def _download_clip(url: str, title: str) -> Optional[Path]:
         "--merge-output-format", "mp4",
         "--output", str(out_path),
         "--no-warnings",
+        # Bot-detection bypass: present as Android app client, which skips
+        # YouTube's sign-in challenge that affects server/datacenter IPs
+        "--extractor-args", "youtube:player_client=android,web",
+        "--add-header", "User-Agent:Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36",
         url,
     ]
 
@@ -1032,8 +1036,32 @@ def build_layout_fullframe(
         ], capture_output=True, text=True, timeout=180)
 
         if r3.returncode != 0:
-            logger.error("build_layout_fullframe: overlay failed: %s", r3.stderr[-300:])
-            return None
+            logger.warning(
+                "build_layout_fullframe: two-pass overlay failed (rc=%d) — trying single-pass fallback",
+                r3.returncode,
+            )
+            logger.debug("  overlay stderr: %s", r3.stderr[-300:])
+            # Single-pass fallback: scale+blur+overlay in one filter_complex, no tmp files needed
+            r3 = subprocess.run([
+                "ffmpeg", "-y", "-threads", "2", "-i", str(source),
+                "-filter_complex", (
+                    f"[0:v]fps=30,scale={OUTPUT_W}:{OUTPUT_H}:force_original_aspect_ratio=increase,"
+                    f"crop={OUTPUT_W}:{OUTPUT_H},gblur=sigma=25[bg];"
+                    f"[0:v]fps=30,scale={OUTPUT_W}:-2[fg];"
+                    f"[bg][fg]overlay=(W-w)/2:(H-h)/2[v]"
+                ),
+                "-map", "[v]", "-map", "0:a?",
+                "-c:v", "libx264", "-preset", "ultrafast", "-threads", "2",
+                "-c:a", "aac", "-b:a", "128k",
+                str(tmp_comb),
+            ], capture_output=True, text=True, timeout=300)
+            if r3.returncode != 0:
+                logger.error(
+                    "build_layout_fullframe: single-pass fallback also failed:\n%s",
+                    r3.stderr[-400:],
+                )
+                return None
+            logger.info("build_layout_fullframe: single-pass fallback succeeded")
 
         # Branding bar at bottom
         brand_path = make_branding_bar(platform, creator)
