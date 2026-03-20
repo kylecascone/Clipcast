@@ -79,6 +79,7 @@ logger = logging.getLogger(__name__)
 
 def find_font() -> Optional[str]:
     """Return the first existing font path for the current OS, or None."""
+    import glob
     import platform as _platform
     if _platform.system() == "Darwin":
         candidates = [
@@ -89,7 +90,15 @@ def find_font() -> Optional[str]:
             "/Library/Fonts/Arial.ttf",
         ]
     else:
-        # Linux / Railway (Nix dejavu_fonts package or distro defaults)
+        # Railway Nixpacks installs fonts under a hashed /nix/store path —
+        # search dynamically first since the hash changes between builds.
+        nix_fonts = glob.glob(
+            "/nix/store/*/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        )
+        if nix_fonts:
+            return nix_fonts[0]
+
+        # Linux / Railway fallback candidates (distro or alternate Nix layouts)
         candidates = [
             "/run/current-system/sw/share/X11/fonts/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
