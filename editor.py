@@ -752,8 +752,12 @@ def make_branding_bar(platform: str, creator_name: str) -> str:
 
     img  = Image.new("RGBA", (OUTPUT_W, BRANDING_H), (0, 0, 0, 255))
     draw = ImageDraw.Draw(img)
-    font_lg = ImageFont.truetype(_FONT_BOLD, 40)
-    font_sm = ImageFont.truetype(_FONT_BOLD, 28)
+    if _FONT_BOLD:
+        font_lg = ImageFont.truetype(_FONT_BOLD, 40)
+        font_sm = ImageFont.truetype(_FONT_BOLD, 28)
+    else:
+        font_lg = ImageFont.load_default()
+        font_sm = ImageFont.load_default()
     color_map = {"twitch": (145, 70, 255), "youtube": (255, 0, 0), "kick": (83, 252, 24)}
     color = color_map.get(platform.lower(), (255, 255, 255))
 
@@ -1063,9 +1067,23 @@ def build_layout_fullframe(
                 return None
             logger.info("build_layout_fullframe: single-pass fallback succeeded")
 
-        # Branding bar at bottom
-        brand_path = make_branding_bar(platform, creator)
-        _overlay_png_on_video(str(tmp_comb), brand_path, 0, OUTPUT_H - BRANDING_H, str(output))
+        # Branding bar at bottom — copy tmp_comb → output first so we always
+        # have a valid output file even if the branding overlay fails
+        import shutil as _shutil
+        _shutil.copy2(str(tmp_comb), str(output))
+        try:
+            brand_path = make_branding_bar(platform, creator)
+            branded_ok = _overlay_png_on_video(
+                str(output), brand_path, 0, OUTPUT_H - BRANDING_H, str(output) + ".branded.mp4"
+            )
+            if branded_ok:
+                Path(str(output) + ".branded.mp4").replace(output)
+            else:
+                logger.warning("build_layout_fullframe: branding overlay failed — returning unbranded video")
+                Path(str(output) + ".branded.mp4").unlink(missing_ok=True)
+        except Exception as brand_exc:
+            logger.warning("build_layout_fullframe: branding step error (%s) — returning unbranded video", brand_exc)
+            Path(str(output) + ".branded.mp4").unlink(missing_ok=True)
 
         return output if output.exists() and output.stat().st_size > 100_000 else None
 
