@@ -555,12 +555,19 @@ def _download_clip(url: str, title: str) -> Optional[Path]:
     # On Railway, route through Webshare rotating residential proxy to avoid
     # datacenter IP blocks on YouTube and other platforms
     _is_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"))
-    if _is_railway:
-        _proxy_url = os.environ.get("WEBSHARE_PROXY_URL")
-        if _proxy_url:
-            cmd.insert(-1, "--proxy")
-            cmd.insert(-1, _proxy_url)
-            logger.info("Using Webshare proxy for download")
+    _proxy_url = os.environ.get("WEBSHARE_PROXY_URL")
+    print(
+        f"PROXY DEBUG: is_railway={_is_railway} "
+        f"WEBSHARE_PROXY_URL={_proxy_url[:20] + '...' if _proxy_url else None}",
+        flush=True,
+    )
+    if _is_railway and _proxy_url:
+        # Insert before the URL (last element) to keep URL at end of cmd
+        cmd[-1:] = ["--proxy", _proxy_url, url]
+        print(f"PROXY DEBUG: proxy flag injected — cmd preview: {cmd[:6]} ... {cmd[-4:]}", flush=True)
+    else:
+        if _is_railway and not _proxy_url:
+            print("PROXY DEBUG: Railway detected but WEBSHARE_PROXY_URL is not set — downloading without proxy", flush=True)
 
     logger.info("Downloading: %s", url[:80])
     try:
