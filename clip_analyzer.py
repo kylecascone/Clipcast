@@ -24,9 +24,21 @@ Usage
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize(text: str, max_len: int = 500) -> str:
+    """Strip characters that can break JSON payloads and truncate."""
+    if not text:
+        return ""
+    # Remove control characters (except tab/newline which are safe in JSON strings)
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
+    # Replace curly braces that could corrupt the f-string JSON template
+    text = text.replace("{", "(").replace("}", ")")
+    return text[:max_len]
 
 
 def analyze_clip_with_ai(clip: Dict[str, Any]) -> Dict[str, Any]:
@@ -67,15 +79,16 @@ def analyze_clip_with_ai(clip: Dict[str, Any]) -> Dict[str, Any]:
 
     client = anthropic.Anthropic(api_key=api_key)
 
-    title      = clip.get("viral_title") or clip.get("title") or ""
-    creator    = clip.get("creator_name") or ""
-    category   = clip.get("category") or ""
+    raw_title  = clip.get("viral_title") or clip.get("title") or ""
+    title      = _sanitize(raw_title, 500)
+    creator    = _sanitize(clip.get("creator_name") or "", 100)
+    category   = _sanitize(clip.get("category") or "", 100)
     duration   = clip.get("duration") or clip.get("duration_sec") or 0
-    theme      = clip.get("theme") or ""
-    transcript = clip.get("transcript_preview") or ""
+    theme      = _sanitize(clip.get("theme") or "", 200)
+    transcript = _sanitize(clip.get("transcript_preview") or "", 400)
     view_count = clip.get("view_count") or 0
     upvotes    = clip.get("upvotes") or 0
-    source     = clip.get("discovery_source") or ""
+    source     = _sanitize(clip.get("discovery_source") or "", 100)
 
     prompt = f"""You are a viral TikTok hook writer for a short clip posting account with 2 million followers. Your titles stop people mid-scroll.
 
@@ -119,7 +132,7 @@ Theme: {theme}
 Views: {view_count:,}
 Upvotes: {upvotes:,}
 Source: {source}
-Transcript: {transcript[:400] if transcript else 'Not available'}
+Transcript: {transcript or 'Not available'}
 
 Respond ONLY with JSON:
 {{
@@ -159,8 +172,16 @@ Rejection rate target: under 10%. Your job is scoring and titling, not gatekeepi
             "viral_title_suggestion": suggestion,
         }
 
+    except anthropic.BadRequestError as exc:
+        logger.warning(
+            "analyze_clip_with_ai: 400 Bad Request for clip title %r — skipping. Error: %s",
+            raw_title[:120],
+            exc,
+        )
+        return _default
+
     except Exception as exc:
-        logger.debug("analyze_clip_with_ai: API error: %s", exc)
+        logger.warning("analyze_clip_with_ai: API error: %s", exc)
         return _default
 
 
