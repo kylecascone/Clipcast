@@ -677,23 +677,13 @@ def refresh_viral_discovery_pool(
         )
 
         # ── 1. Reddit + YouTube Shorts ────────────────────────────────────────
-        import os as _os
-        _on_railway = bool(
-            _os.environ.get("RAILWAY_ENVIRONMENT") or _os.environ.get("RAILWAY_PROJECT_ID")
+        logger.info(
+            "refresh_viral_discovery_pool: discovering viral clips "
+            "(Reddit + YouTube Shorts + YouTube Gaming + Streamable + Twitter)…"
         )
-        if _on_railway:
-            logger.info(
-                "refresh_viral_discovery_pool: Railway detected — skipping Reddit "
-                "(v.redd.it blocked); fetching YouTube Shorts + YouTube Gaming + Streamable + Twitter…"
-            )
-        else:
-            logger.info(
-                "refresh_viral_discovery_pool: discovering viral clips "
-                "(Reddit + YouTube Shorts + YouTube Gaming + Streamable + Twitter)…"
-            )
         clips = discover_viral_clips(
             include_youtube_shorts=True,
-            include_reddit=not _on_railway,
+            include_reddit=True,
             max_total=max_clips,
         )
         logger.info(
@@ -731,13 +721,9 @@ def refresh_viral_discovery_pool(
         # ── 5. Normalise sources + deduplicate by URL ─────────────────────────
         seen_urls: set = set()
         unique_clips: List[Dict] = []
-        reddit_skipped = 0
         for clip in clips:
             clip = _normalize_source(clip)
             url = clip.get("url", "")
-            if _on_railway and "v.redd.it" in url:
-                reddit_skipped += 1
-                continue
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique_clips.append(clip)
@@ -746,12 +732,6 @@ def refresh_viral_discovery_pool(
                 import hashlib
                 h = hashlib.md5(url.encode()).hexdigest()[:12]
                 clip["clip_id"] = f"viral_url_{h}"
-
-        if reddit_skipped:
-            logger.info(
-                "refresh_viral_discovery_pool: skipped %d v.redd.it URL(s) (Railway — 403 blocked)",
-                reddit_skipped,
-            )
         logger.info(
             "refresh_viral_discovery_pool: %d unique clips after deduplication, "
             "running quality filter…",

@@ -552,6 +552,16 @@ def _download_clip(url: str, title: str) -> Optional[Path]:
         url,
     ]
 
+    # On Railway, route through Webshare rotating residential proxy to avoid
+    # datacenter IP blocks on YouTube and other platforms
+    _is_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"))
+    if _is_railway:
+        _proxy_url = os.environ.get("WEBSHARE_PROXY_URL")
+        if _proxy_url:
+            cmd.insert(-1, "--proxy")
+            cmd.insert(-1, _proxy_url)
+            logger.info("Using Webshare proxy for download")
+
     logger.info("Downloading: %s", url[:80])
     try:
         result = subprocess.run(
