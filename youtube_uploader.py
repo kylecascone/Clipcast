@@ -68,6 +68,7 @@ def upload_to_youtube_shorts(
     description: str = "",
     hashtags: list = None,
     thumbnail_path: str = None,
+    creator_name: str = "",
 ) -> dict:
     """
     Upload a video to YouTube Shorts.
@@ -148,6 +149,38 @@ def upload_to_youtube_shorts(
     except HttpError as e:
         error_msg = f"YouTube API error: {e.resp.status} {e.content}"
         print(error_msg)
+
+        # Phase 6: auto-block creator when YouTube rejects for policy violation.
+        # HTTP 400 videoRejected / 403 forbidden typically mean content policy hit.
+        try:
+            import json as _json
+            err_body = _json.loads(e.content.decode("utf-8", errors="ignore")) if e.content else {}
+            err_reason = (
+                err_body.get("error", {}).get("errors", [{}])[0].get("reason", "")
+                or err_body.get("error", {}).get("status", "")
+            ).lower()
+            _POLICY_REASONS = {"videorejected", "forbidden", "uploadlimitexceeded", "privacyerror"}
+            if e.resp.status in (400, 403) and (err_reason in _POLICY_REASONS or e.resp.status == 403):
+                _creator = creator_name or ""
+                if _creator:
+                    try:
+                        from blocked_creators import add_blocked
+                        add_blocked(_creator, "youtube")
+                        print(
+                            f"  [Phase 6] Auto-blocked creator '{_creator}' on YouTube "
+                            f"after policy rejection ({err_reason or e.resp.status})."
+                        )
+                        import logging as _logging
+                        _logging.getLogger(__name__).warning(
+                            "Phase 6 auto-block: creator='%s' blocked on youtube "
+                            "after HTTP %d rejection (reason=%s)",
+                            _creator, e.resp.status, err_reason,
+                        )
+                    except Exception as _be:
+                        print(f"  [Phase 6] Auto-block failed for '{_creator}': {_be}")
+        except Exception:
+            pass  # Auto-block is best-effort — never crash the upload result
+
         return {"success": False, "error": error_msg}
     except Exception as e:
         print(f"Upload failed: {e}")

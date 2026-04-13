@@ -480,18 +480,26 @@ def content_safety_filter(clip: Dict[str, Any]) -> bool:
         "molest", "molested", "molesting", "grope", "groped",
         "child abuse", "sexually assault", "sex offend", "sexually harass",
         # Self-harm
-        "suicide", "self harm", "self-harm", "overdose",
-        # Mass violence
-        "mass shooting", "terrorist", "genocide",
-        # CSAM
-        "child porn", "cp ", "csam",
-        # Explicit content
+        "suicide", "self harm", "self-harm", "overdose", "kill myself",
+        "kms ", "kys ",
+        # Mass violence / terrorism
+        "mass shooting", "terrorist attack", "genocide", "school shooting",
+        "bomb threat", "shooting spree",
+        # CSAM / minors
+        "child porn", "cp ", "csam", "minor nude", "underage",
+        # Explicit sexual content
         "nude", "naked", "onlyfans leak", "nsfw",
-        "porn", "porno", "pornography",
-        # Slurs (title-level check — also caught at caption render time via censor_word)
-        "nigger", "faggot", "chink", "spic", "kike", "wetback",
-        # Platform ban triggers
-        "doxxing", "swatting gone wrong",
+        "porn", "porno", "pornography", "sex tape", "leaked nudes",
+        "explicit video", "xxx",
+        # Slurs — racial, gender, sexual orientation
+        "nigger", "nigga ", "faggot", "chink", "spic", "kike", "wetback",
+        "tranny", "shemale", "dyke ", "retard ", "mongoloid",
+        # Doxxing / swatting
+        "doxxing", "doxxed", "swatting gone wrong", "swat prank",
+        "home address leaked", "irl doxx",
+        # Extreme violence descriptors
+        "beheading", "execution video", "torture video", "snuff",
+        "graphic violence", "gore video",
     ]
 
     return not any(term in title for term in _BANNED_TERMS)

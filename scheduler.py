@@ -80,6 +80,22 @@ def run_automated_pipeline(
         logger.error("Configuration error: %s", e)
         return
 
+    # ── HARD GATE: never queue anything without an explicit schedule ─────────────
+    # This is the authoritative check. All queue additions are gated on this;
+    # no code path may bypass it. If the user hasn't configured any posting
+    # slots in schedule.yaml, the pipeline still runs (pool refresh, scoring)
+    # but nothing is ever added to the posting queue.
+    if not schedule_slots_exist():
+        logger.info(
+            "run_automated_pipeline: no schedule slots configured in schedule.yaml "
+            "— pipeline aborted. Configure a posting schedule in the webapp to enable auto-posting."
+        )
+        console.print(
+            "  [yellow]No schedule slots configured — pipeline skipped.[/yellow]\n"
+            "  [dim]Set a posting schedule in the webapp (Schedule page) to enable auto-posting.[/dim]"
+        )
+        return
+
     run_start = datetime.now()
     logger.info(
         "=== Automated pipeline started at %s ===",
@@ -686,6 +702,13 @@ def process_due_queue_items(
 # YAML schedule helpers
 # ══════════════════════════════════════════════════════════════════════════════
 
+def schedule_slots_exist() -> bool:
+    """Return True only if at least one posting slot is configured in schedule.yaml."""
+    sched = load_schedule()
+    _DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    return any(sched.get(day) for day in _DAYS)
+
+
 def load_schedule() -> Dict[str, Any]:
     """Load weekly schedule from schedule.yaml, return {} if missing."""
     schedule_path = Path(__file__).parent / "schedule.yaml"
@@ -710,18 +733,21 @@ def get_slots_for_now(sched: Dict[str, Any]) -> list:
 
 def filter_pool_by_slot(slot: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
-    Return up to 10 pool clips matching a schedule slot's creator / content_type /
-    min_score / platform criteria, ordered by score DESC.
+    Return up to 10 pool clips matching a schedule slot's criteria.
+
+    Filters by: creator, category (content_category column), min_score.
+    category in the slot maps directly to content_category values:
+    'gaming', 'sports', 'fails', 'news', 'podcast', 'trending', or 'Any'.
     """
-    creator      = slot.get("creator", "") or ""
-    content_type = slot.get("content_type", "Any") or "Any"
-    min_score    = float(slot.get("min_score", 0) or 0)
+    creator   = slot.get("creator", "") or ""
+    category  = slot.get("category", "") or slot.get("content_type", "") or ""
+    min_score = float(slot.get("min_score", 0) or 0)
 
     query = """
         SELECT * FROM shared_clips
         WHERE is_blocked = 0
           AND (expires_at IS NULL OR expires_at > datetime('now'))
-          AND score >= ?
+          AND COALESCE(final_score, score, 0) >= ?
     """
     params: List[Any] = [min_score]
 
@@ -729,11 +755,11 @@ def filter_pool_by_slot(slot: Dict[str, Any]) -> List[Dict[str, Any]]:
         query += " AND creator_name = ?"
         params.append(creator)
 
-    if content_type and content_type != "Any":
-        query += " AND (category LIKE ? OR theme LIKE ?)"
-        params.extend([f"%{content_type}%", f"%{content_type}%"])
+    if category and category.lower() not in ("", "any"):
+        query += " AND content_category = ?"
+        params.append(category.lower())
 
-    query += " ORDER BY score DESC LIMIT 10"
+    query += " ORDER BY COALESCE(final_score, score, 0) DESC LIMIT 10"
 
     try:
         conn = database.get_connection()

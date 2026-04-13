@@ -46,8 +46,8 @@ _YTDLP_TIMEOUT  = 60   # seconds per yt-dlp call
 _HTTP_TIMEOUT   = 15   # seconds per requests call
 
 # ── View / upvote minimums ─────────────────────────────────────────────────────
-_MIN_VIEWS_YT_SHORTS  = 20_000
-_MIN_UPVOTES_REDDIT   = 50    # lowered from 200 — quality filter handles relevance
+_MIN_VIEWS_YT_SHORTS  = 50_000   # only clips with proven view traction
+_MIN_UPVOTES_REDDIT   = 1_000    # frontpage-level validation required
 
 # ── Subreddit → creator fallback map ──────────────────────────────────────────
 # Used when post title doesn't mention the creator (common in creator-specific subs)
@@ -80,82 +80,114 @@ _REDDIT_UA_POOL: List[str] = [
     "python-requests/2.31.0",
 ]
 
-# ── Reddit subreddits ──────────────────────────────────────────────────────────
+# ── Subreddit → content_category mapping ──────────────────────────────────────
+_SUBREDDIT_CATEGORIES: Dict[str, str] = {
+    # Fails / viral moments
+    "PublicFreakout":       "fails",
+    "nextfuckinglevel":     "fails",
+    "WTF":                  "fails",
+    "unexpected":           "fails",
+    "maybemaybemaybe":      "fails",
+    "therewasanattempt":    "fails",
+    "instant_regret":       "fails",
+    "nonononoyes":          "fails",
+    # Sports
+    "sports":               "sports",
+    "nba":                  "sports",
+    "soccer":               "sports",
+    "MMA":                  "sports",
+    "Boxing":               "sports",
+    "golf":                 "sports",
+    # Gaming / streaming
+    "LivestreamFail":       "gaming",
+    "LivestreamFails":      "gaming",
+    "gaming":               "gaming",
+    "xboxone":              "gaming",
+    "pcgaming":             "gaming",
+    "twitchclips":          "gaming",
+    "xqcow":                "gaming",
+    "KaiCenat":             "gaming",
+    "IShowSpeed":           "gaming",
+    "AdinRoss":             "gaming",
+    # News
+    "news":                 "news",
+    "worldnews":            "news",
+    "politics":             "news",
+    # Podcast
+    "JoeRogan":             "podcast",
+    "podcast":              "podcast",
+}
+
+# ── Reddit subreddits (prioritised — 1 000+ upvote frontpage content only) ────
 REDDIT_SUBREDDITS: List[str] = [
-    # Streaming — highest priority
-    "LivestreamFail",
-    "xqcow",
-    "KaiCenat",
-    "IShowSpeed",
-    "AdinRoss",
-    "twitchclips",
-    "LivestreamFails",
-    # General viral video
+    # Fails / viral moments
     "PublicFreakout",
-    "unexpected",
     "nextfuckinglevel",
+    "WTF",
+    "unexpected",
     "maybemaybemaybe",
     "therewasanattempt",
     "instant_regret",
     "nonononoyes",
-    "WTF",
-    "interestingasfuck",
-    "Damnthatsinteresting",
     # Sports
     "sports",
     "nba",
     "soccer",
     "MMA",
     "Boxing",
+    "golf",
+    # Gaming / streaming
+    "LivestreamFail",
+    "LivestreamFails",
+    "gaming",
+    "xboxone",
+    "pcgaming",
+    "twitchclips",
+    # Podcast / news
+    "JoeRogan",
+    "news",
+    "worldnews",
 ]
 _REDDIT_HEADERS = {"User-Agent": "ClipCastBot/1.0 (personal automation tool)"}
 
-# ── YouTube Shorts search queries (42 total) ───────────────────────────────────
+# ── YouTube Shorts search queries — categorised for broad appeal ───────────────
 YT_SHORTS_QUERIES: List[str] = [
-    # Original 12
-    "xqc funny moments twitch clip",
-    "kai cenat viral clip reaction",
-    "ishowspeed funny moment shorts",
-    "twitch streamer insane clip",
-    "adinross irl clip viral",
-    "jynxzi clip funny moment",
-    "twitch highlights funny",
-    "streamer reaction insane moment",
+    # Gaming / streaming (content_category: gaming)
+    "twitch streamer insane moment viral",
     "gaming rage quit funny clip",
-    "twitch clip goes viral",
+    "streamer reaction insane clip shorts",
+    "twitch ban clip viral shorts",
+    "streamer freaks out viral moment",
+    "twitch highlights funny moments",
     "kick streamer clip viral",
-    "irl streamer crazy moment",
-    # 30 more (per user request)
-    "shroud clips shorts",
-    "nickmercs shorts",
-    "timthetatman funny shorts",
-    "pokimane reaction shorts",
-    "hasanabi shorts",
-    "moistcritikal shorts",
-    "ludwig shorts",
-    "valkyrae shorts",
-    "dream smp shorts",
-    "tommyinnit shorts",
-    "caseoh shorts",
-    "forsen shorts",
-    "summit1g shorts",
-    "sodapoppin shorts",
-    "mizkif shorts",
-    "emiru shorts",
-    "adinross irl shorts",
-    "kai cenat irl shorts",
-    "ishowspeed irl shorts",
-    "neon kick shorts",
-    "jidion shorts",
-    "sneako shorts",
-    "clavicular kick shorts",
-    "trainwreck shorts",
-    "viral twitch moment shorts",
-    "twitch ban clip shorts",
-    "streamer freaks out shorts",
-    "twitch fails shorts",
-    "streamer goes viral shorts",
-    "funny twitch clip shorts",
+    # Sports (content_category: sports)
+    "nba insane dunk viral shorts",
+    "soccer crazy goal viral",
+    "mma knockout viral clip",
+    "nfl crazy play viral shorts",
+    "boxing knockout viral clip",
+    "sports fail funny viral",
+    "athlete insane moment viral",
+    # Fails / reactions (content_category: fails)
+    "public freakout viral shorts",
+    "crazy fail compilation viral",
+    "unexpected moment viral clip",
+    "people fail funny viral",
+    "insane reaction viral shorts",
+    "wild moment caught on camera",
+    "viral video nobody expected",
+    # News / events (content_category: news)
+    "news moment viral shorts",
+    "politician insane moment viral",
+    "breaking news viral clip",
+    # Podcasts (content_category: podcast)
+    "joe rogan clip viral moment",
+    "podcast viral moment shorts",
+    "interview insane reaction viral",
+    # General trending
+    "viral video millions views shorts",
+    "insane moment viral 2024",
+    "funniest viral clip shorts",
 ]
 
 # ── YouTube Shorts channel scrapers ───────────────────────────────────────────
@@ -340,17 +372,28 @@ def scrape_reddit(subreddit: str, limit: int = 50) -> List[Dict]:
     Returns raw post data dicts (v.redd.it videos only).
     """
     import os
-    url_base = f"https://www.reddit.com/r/{subreddit}/top.json?t=week&limit={limit}"
-    old_url  = f"https://old.reddit.com/r/{subreddit}/top.json?t=week&limit={limit}"
-    api_url  = f"https://api.reddit.com/r/{subreddit}/top.json?t=week&limit={limit}"
+    url_base = f"https://www.reddit.com/r/{subreddit}/top.json?t=day&limit={limit}"
+    old_url  = f"https://old.reddit.com/r/{subreddit}/top.json?t=day&limit={limit}"
+    api_url  = f"https://api.reddit.com/r/{subreddit}/top.json?t=day&limit={limit}"
+
+    _VIDEO_URL_PATTERNS = (
+        "v.redd.it",
+        "youtube.com/watch", "youtu.be",
+        "clips.twitch.tv", "twitch.tv/clip",
+        "streamable.com",
+        "twitter.com/i/status", "x.com/i/status",
+    )
 
     def _extract_video_posts(r) -> List[Dict]:
         posts = r.json().get("data", {}).get("children", [])
-        return [
-            p["data"] for p in posts
-            if p.get("data", {}).get("is_video", False)
-            and "v.redd.it" in p.get("data", {}).get("url", "")
-        ]
+        results = []
+        for p in posts:
+            d = p.get("data", {})
+            url = d.get("url") or d.get("url_overridden_by_dest") or ""
+            # Accept native Reddit video OR external video URLs
+            if d.get("is_video") or any(pat in url for pat in _VIDEO_URL_PATTERNS):
+                results.append(d)
+        return results
 
     # Method A: Rotating user agents on reddit.com
     for ua in _REDDIT_UA_POOL:
@@ -451,42 +494,58 @@ def _normalise_reddit_post(post: Dict, min_upvotes: int) -> Optional[Dict]:
     if ups < min_upvotes:
         return None
 
-    title = post.get("title") or ""
-    url   = post.get("url") or post.get("url_overridden_by_dest") or ""
+    title   = post.get("title") or ""
+    url     = post.get("url") or post.get("url_overridden_by_dest") or ""
     post_id = post.get("id") or url
 
-    if not url or "v.redd.it" not in url:
+    if not url:
         return None
 
-    # Duration is available directly from Reddit's API — no yt-dlp call needed
-    media = post.get("media") or post.get("secure_media") or {}
-    reddit_video = media.get("reddit_video") or {}
-    duration = float(reddit_video.get("duration") or 0)
+    subreddit       = post.get("subreddit") or ""
+    subreddit_lower = subreddit.lower()
 
-    if duration <= 0 or duration > 180:
-        return None
+    # Determine content_category from subreddit
+    content_category = _SUBREDDIT_CATEGORIES.get(subreddit_lower, "") or \
+                       _SUBREDDIT_CATEGORIES.get(subreddit, "")
 
-    has_audio = bool(reddit_video.get("has_audio", True))
+    # Duration: available for native Reddit videos; 0 for external links (editor probes later)
+    duration  = 0.0
+    has_audio = True
+    is_native_reddit = "v.redd.it" in url
 
-    # Trace to original Tier-1 creator
+    if is_native_reddit:
+        media        = post.get("media") or post.get("secure_media") or {}
+        reddit_video = media.get("reddit_video") or {}
+        duration     = float(reddit_video.get("duration") or 0)
+        has_audio    = bool(reddit_video.get("has_audio", True))
+        if duration > 180:
+            return None
+    else:
+        # External video link — duration unknown until yt-dlp probes it
+        # Accept it; editor will probe & reject if out of range
+        duration = 60.0  # placeholder so scorer doesn't reject as "0s"
+
+    # Trace to original creator
     origin = find_original_source(title, post.get("selftext", ""), post.get("author", ""))
 
-    # Fallback 1: infer creator from subreddit name (e.g. r/KaiCenat posts rarely
-    # mention "Kai Cenat" in the title)
     if origin is None:
-        subreddit_lower = (post.get("subreddit") or "").lower()
         if subreddit_lower in _SUBREDDIT_TO_CREATOR:
             src, name = _SUBREDDIT_TO_CREATOR[subreddit_lower]
             origin = {"source": src, "creator_name": name}
 
-    # Fallback 2: for general viral subreddits (r/PublicFreakout, r/WTF, etc.)
-    # accept the clip without tier1 attribution — quality filter decides
+    # For broad viral subreddits accept without strict creator attribution
     if origin is None:
-        origin = {"source": "twitch", "creator_name": post.get("author") or "viral_clip"}
+        # Infer source from URL
+        if "youtube.com" in url or "youtu.be" in url:
+            src = "youtube"
+        elif "twitch.tv" in url:
+            src = "twitch"
+        else:
+            src = "youtube"
+        origin = {"source": src, "creator_name": post.get("author") or "viral_clip"}
 
     boost = _compute_viral_boost("reddit_trending", ups)
-    # Use upvotes × 50 as a rough view-count proxy for pool filtering
-    view_count = ups * 50
+    view_count = ups * 50  # rough proxy
 
     return {
         "clip_id":          f"viral_reddit_{post_id}",
@@ -502,7 +561,8 @@ def _normalise_reddit_post(post: Dict, min_upvotes: int) -> Optional[Dict]:
         "has_music":        not has_audio,
         "language":         "en",
         "game":             "",
-        "category":         "",
+        "category":         content_category,
+        "content_category": content_category,
         "mode":             "auto",
         "discovery_source": "reddit_trending",
         "viral_title":      title[:200],
@@ -629,6 +689,24 @@ def scrape_youtube_shorts(max_results: int = 60) -> List[Dict]:
     return results
 
 
+_YT_CATEGORY_KEYWORDS: Dict[str, List[str]] = {
+    "sports":  ["nba", "nfl", "soccer", "mma", "boxing", "golf", "athlete", "dunk", "goal", "knockout"],
+    "fails":   ["freakout", "fail", "unexpected", "wtf", "crazy", "public", "reaction", "insane moment"],
+    "gaming":  ["twitch", "streamer", "gaming", "kick", "gamer", "stream", "rage", "ban"],
+    "news":    ["news", "politician", "breaking", "president", "government"],
+    "podcast": ["rogan", "podcast", "interview", "episode"],
+}
+
+
+def _infer_yt_category(title: str, uploader: str) -> str:
+    """Infer content_category from title and uploader keywords."""
+    combined = (title + " " + uploader).lower()
+    for cat, keywords in _YT_CATEGORY_KEYWORDS.items():
+        if any(kw in combined for kw in keywords):
+            return cat
+    return "trending"
+
+
 def _normalise_yt_shorts_entry(entry: Dict) -> Optional[Dict]:
     """Convert a raw yt-dlp Shorts entry to a ClipCast clip dict."""
     if not entry:
@@ -646,9 +724,11 @@ def _normalise_yt_shorts_entry(entry: Dict) -> Optional[Dict]:
 
     origin = find_original_source(title, entry.get("description") or "", uploader)
     if origin is None:
-        return None
+        # Accept clips even without Tier-1 attribution — quality gate handles relevance
+        origin = {"source": "youtube", "creator_name": uploader or "viral_clip"}
 
-    boost = _compute_viral_boost("youtube_shorts_trending", view_count)
+    boost            = _compute_viral_boost("youtube_shorts_trending", view_count)
+    content_category = _infer_yt_category(title, uploader)
 
     return {
         "clip_id":          f"viral_yt_shorts_{vid_id[:64]}",
@@ -663,7 +743,8 @@ def _normalise_yt_shorts_entry(entry: Dict) -> Optional[Dict]:
         "has_music":        False,
         "language":         "en",
         "game":             "",
-        "category":         "",
+        "category":         content_category,
+        "content_category": content_category,
         "mode":             "auto",
         "discovery_source": "youtube_shorts_trending",
         "viral_title":      title[:200],
@@ -944,20 +1025,100 @@ def fetch_twitter_clips() -> List[Dict]:
 # TikTok / Instagram — unavailable stubs
 # ══════════════════════════════════════════════════════════════════════════════
 
-def scrape_tiktok_hashtag(hashtag: str, max_results: int = 10) -> List[Dict]:
-    """
-    TikTok scraping is currently unavailable.
+_TIKTOK_HASHTAGS: List[tuple] = [
+    # (hashtag, content_category)
+    ("gaming",  "gaming"),
+    ("sports",  "sports"),
+    ("fails",   "fails"),
+    ("viral",   "trending"),
+    ("fyp",     "trending"),
+]
 
-    yt-dlp's TikTok extractor requires app signing credentials that TikTok
-    has revoked.  Additionally, direct video URLs return "IP address blocked."
+_MIN_VIEWS_TIKTOK = 500_000
 
-    Returns [] immediately.
+
+def scrape_tiktok_hashtag(hashtag: str, max_results: int = 20) -> List[Dict]:
     """
-    logger.debug(
-        "scrape_tiktok_hashtag: TikTok yt-dlp extractor unavailable "
-        "(app info broken + IP blocked). Returning []."
-    )
-    return []
+    Attempt to scrape TikTok trending videos for a hashtag via yt-dlp.
+
+    yt-dlp's TikTok extractor is fragile and IP-blocked on datacenter IPs.
+    This function tries but returns [] silently on any failure — never
+    crashes the pipeline.
+    """
+    url = f"https://www.tiktok.com/tag/{hashtag}"
+    cmd = [
+        "yt-dlp",
+        "--flat-playlist",
+        "--dump-single-json",
+        "--no-warnings",
+        "--quiet",
+        "--playlist-end", str(max_results),
+        url,
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            logger.debug("scrape_tiktok_hashtag #%s: yt-dlp failed (expected on Railway)", hashtag)
+            return []
+        data = json.loads(result.stdout)
+        entries = data.get("entries") or []
+        clips: List[Dict] = []
+        for e in entries:
+            if not e:
+                continue
+            view_count = int(e.get("view_count") or 0)
+            if view_count < _MIN_VIEWS_TIKTOK:
+                continue
+            duration = float(e.get("duration") or 0)
+            if duration <= 0 or duration > 180:
+                continue
+            vid_id = e.get("id") or e.get("url", "")
+            title  = (e.get("title") or e.get("description") or hashtag)[:200]
+            clips.append({
+                "clip_id":          f"viral_tiktok_{vid_id[:64]}",
+                "source":           "youtube",
+                "creator_name":     e.get("uploader") or e.get("channel") or "tiktok_viral",
+                "title":            title,
+                "url":              e.get("url") or e.get("webpage_url") or "",
+                "duration":         duration,
+                "duration_sec":     duration,
+                "view_count":       view_count,
+                "upvotes":          0,
+                "score":            65.0,
+                "has_music":        True,
+                "language":         "en",
+                "game":             "",
+                "category":         "trending",
+                "content_category": "trending",
+                "mode":             "auto",
+                "discovery_source": "tiktok_trending",
+                "viral_title":      title,
+                "theme":            detect_theme(title),
+            })
+        logger.info("scrape_tiktok_hashtag #%s: %d clips >= %dK views", hashtag, len(clips), _MIN_VIEWS_TIKTOK // 1000)
+        return clips
+    except Exception as exc:
+        logger.debug("scrape_tiktok_hashtag #%s: %s", hashtag, exc)
+        return []
+
+
+def fetch_tiktok_trending(max_clips: int = 30) -> List[Dict]:
+    """Scrape TikTok trending hashtags. Silently returns [] on IP-blocked environments."""
+    clips: List[Dict] = []
+    seen_ids: set = set()
+    for hashtag, category in _TIKTOK_HASHTAGS:
+        if len(clips) >= max_clips:
+            break
+        for c in scrape_tiktok_hashtag(hashtag, max_results=10):
+            cid = c.get("clip_id", "")
+            if cid not in seen_ids:
+                seen_ids.add(cid)
+                c["content_category"] = category
+                clips.append(c)
+        time.sleep(0.5)
+    if clips:
+        logger.info("fetch_tiktok_trending: %d clips found across %d hashtags", len(clips), len(_TIKTOK_HASHTAGS))
+    return clips
 
 
 def scrape_instagram_account(account: str, max_results: int = 8) -> List[Dict]:
@@ -981,26 +1142,26 @@ def scrape_instagram_account(account: str, max_results: int = 8) -> List[Dict]:
 def discover_viral_clips(
     include_youtube_shorts: bool = True,
     include_reddit: bool = True,
-    include_tiktok: bool = False,    # Currently unavailable
-    include_instagram: bool = False, # Currently unavailable
+    include_tiktok: bool = True,
+    include_instagram: bool = False,  # yt-dlp does not support profile pages
     max_total: int = 100,
 ) -> List[Dict]:
     """
     Orchestrate viral discovery across all active platforms.
 
-    Scrapes Reddit (r/LivestreamFail etc.) and YouTube Shorts; traces each
-    post back to a known Tier-1 creator; normalises into ClipCast clip dicts
-    ready for add_clip_to_pool().
+    Only pulls content with proven engagement (1 000+ Reddit upvotes,
+    50 000+ YouTube views, 500 000+ TikTok views).
 
     Args:
         include_youtube_shorts:  Scrape YouTube Shorts (default True).
-        include_reddit:          Scrape Reddit subreddits (default True).
-        include_tiktok:          Currently unavailable — always returns 0.
+        include_reddit:          Scrape Reddit — 24-hour top posts (default True).
+        include_tiktok:          Attempt TikTok hashtag scraping (default True,
+                                 silently skipped when IP-blocked).
         include_instagram:       Currently unavailable — always returns 0.
         max_total:               Cap on total clips returned (default 100).
 
     Returns:
-        List of normalised clip dicts, deduplicated by clip_id.
+        List of normalised clip dicts with content_category set, deduplicated by clip_id.
     """
     clips: List[Dict] = []
     seen_ids: set = set()
@@ -1014,19 +1175,18 @@ def discover_viral_clips(
         seen_ids.add(cid)
         clips.append(clip)
 
-    # ── Reddit ────────────────────────────────────────────────────────────────
+    # ── Reddit (24-hour top posts, 1000+ upvotes required) ───────────────────
     if include_reddit:
         logger.info(
-            "viral_discovery: scraping %d Reddit subreddits…",
-            len(REDDIT_SUBREDDITS),
+            "viral_discovery: scraping %d Reddit subreddits (top/day, min %d upvotes)…",
+            len(REDDIT_SUBREDDITS), _MIN_UPVOTES_REDDIT,
         )
-        reddit_raw = 0
-        reddit_added = 0
+        reddit_raw = reddit_added = 0
         for sub in REDDIT_SUBREDDITS:
             if len(clips) >= max_total:
                 break
             try:
-                posts = scrape_reddit(sub, limit=50)
+                posts = scrape_reddit(sub, limit=25)
                 reddit_raw += len(posts)
                 for post in posts:
                     clip = _normalise_reddit_post(post, _MIN_UPVOTES_REDDIT)
@@ -1037,15 +1197,15 @@ def discover_viral_clips(
                 logger.debug("Reddit r/%s error: %s", sub, exc)
             time.sleep(0.3)
         logger.info(
-            "viral_discovery: Reddit — %d raw posts → %d attributed clips",
-            reddit_raw, reddit_added,
+            "viral_discovery: Reddit — %d raw posts → %d clips (>=%d upvotes)",
+            reddit_raw, reddit_added, _MIN_UPVOTES_REDDIT,
         )
 
     # ── YouTube Shorts ────────────────────────────────────────────────────────
     if include_youtube_shorts:
-        logger.info("viral_discovery: scraping YouTube Shorts (%d queries)…", len(YT_SHORTS_QUERIES))
-        yt_raw = 0
-        yt_added = 0
+        logger.info("viral_discovery: scraping YouTube Shorts (%d queries, min %dK views)…",
+                    len(YT_SHORTS_QUERIES), _MIN_VIEWS_YT_SHORTS // 1000)
+        yt_raw = yt_added = 0
         try:
             entries = scrape_youtube_shorts(max_results=max_total - len(clips))
             yt_raw = len(entries)
@@ -1058,39 +1218,30 @@ def discover_viral_clips(
                     yt_added += 1
         except Exception as exc:
             logger.debug("YouTube Shorts scrape error: %s", exc)
-        logger.info(
-            "viral_discovery: YouTube Shorts — %d raw entries → %d attributed clips",
-            yt_raw, yt_added,
-        )
+        logger.info("viral_discovery: YouTube Shorts — %d raw → %d clips", yt_raw, yt_added)
 
-    # ── Platform warnings ─────────────────────────────────────────────────────
+    # ── TikTok (best-effort — silently skipped when IP-blocked) ──────────────
     if include_tiktok:
-        logger.warning(
-            "viral_discovery: TikTok scraping skipped — yt-dlp app info "
-            "broken and IP blocked. 0 clips from TikTok."
-        )
+        try:
+            tiktok_clips = fetch_tiktok_trending(max_clips=30)
+            for c in tiktok_clips:
+                _add(c)
+            if tiktok_clips:
+                logger.info("viral_discovery: TikTok — %d clips", len(tiktok_clips))
+        except Exception as exc:
+            logger.debug("viral_discovery: TikTok fetch error (non-fatal): %s", exc)
+
     if include_instagram:
-        logger.warning(
-            "viral_discovery: Instagram scraping skipped — yt-dlp does not "
-            "support profile page scraping. 0 clips from Instagram."
-        )
+        logger.debug("viral_discovery: Instagram profile scraping unavailable (yt-dlp limitation).")
 
     reddit_count  = sum(1 for c in clips if c.get("discovery_source") == "reddit_trending")
     yt_count      = sum(1 for c in clips if c.get("discovery_source") == "youtube_shorts_trending")
+    tiktok_count  = sum(1 for c in clips if c.get("discovery_source") == "tiktok_trending")
 
     logger.info(
-        "viral_discovery: complete — %d total attributed clips "
-        "(reddit=%d, yt_shorts=%d).",
-        len(clips), reddit_count, yt_count,
+        "viral_discovery: complete — %d total clips (reddit=%d, yt_shorts=%d, tiktok=%d).",
+        len(clips), reddit_count, yt_count, tiktok_count,
     )
-
-    if len(clips) < 50:
-        logger.warning(
-            "viral_discovery: only %d clips found (target: 50+). "
-            "Reddit=%d YT_Shorts=%d. TikTok and Instagram are currently unavailable.",
-            len(clips), reddit_count, yt_count,
-        )
-
     return clips
 
 

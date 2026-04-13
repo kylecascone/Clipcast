@@ -875,6 +875,7 @@ def post_package(package: dict, video_path: str, platform: str = "youtube") -> d
             description=description,
             hashtags=hashtags,
             thumbnail_path=thumbnail_path,
+            creator_name=creator,
         )
 
         if result.get("success"):
@@ -942,6 +943,7 @@ def post_to_youtube(package: dict, video_path: str) -> dict:
             description=description,
             hashtags=hashtags,
             thumbnail_path=thumbnail_path,
+            creator_name=creator,
         )
     except ImportError:
         logger.warning("youtube_uploader not available — falling back to raw HTTP upload")

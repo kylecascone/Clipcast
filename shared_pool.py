@@ -340,13 +340,13 @@ def add_clip_to_pool(
                  duration_sec, view_count, score, has_music, language, category,
                  discovery_source, viral_title, theme,
                  ai_quality_score, ai_analyzed, final_score,
-                 expires_at)
+                 content_category, expires_at)
             VALUES
                 (:clip_id, :source, :creator_name, :title, :url,
                  :duration_sec, :view_count, :score, :has_music, :language, :category,
                  :discovery_source, :viral_title, :theme,
                  :ai_quality_score, :ai_analyzed, :final_score,
-                 :expires_at)
+                 :content_category, :expires_at)
         """, {
             "clip_id":          clip.get("clip_id", ""),
             "source":           source,
@@ -366,6 +366,7 @@ def add_clip_to_pool(
             "ai_analyzed":      int(bool(clip.get("ai_analyzed", False))),
             # Fall back to score so non-AI clips still sort correctly
             "final_score":      float(clip.get("final_score") or clip.get("score") or 0.0),
+            "content_category": clip.get("content_category") or "",
             "expires_at":       expires_at,
         })
         conn.commit()
@@ -487,6 +488,7 @@ def get_clips_for_user(
                 sc.source,
                 sc.creator_name,
                 sc.title,
+                sc.viral_title,
                 sc.url,
                 sc.duration_sec,
                 sc.view_count,
@@ -494,7 +496,8 @@ def get_clips_for_user(
                 COALESCE(sc.final_score, sc.score, 0) AS final_score,
                 sc.has_music,
                 sc.fetched_at,
-                COALESCE(sc.category, '') AS category
+                COALESCE(sc.category, '') AS category,
+                COALESCE(sc.content_category, '') AS content_category
             FROM shared_clips sc
             WHERE sc.is_blocked = 0
               AND sc.expires_at > datetime('now')
@@ -525,6 +528,7 @@ def get_clips_for_user(
                 sc.source,
                 sc.creator_name,
                 sc.title,
+                sc.viral_title,
                 sc.url,
                 sc.duration_sec,
                 sc.view_count,
@@ -597,6 +601,7 @@ def get_clips_for_user(
             "source":                  row["source"],
             "creator_name":            row["creator_name"],
             "title":                   row["title"],
+            "viral_title":             row["viral_title"] or None,
             "url":                     row["url"],
             "duration":                row["duration_sec"],
             "view_count":              row["view_count"],
@@ -605,6 +610,7 @@ def get_clips_for_user(
             "has_music":               bool(row["has_music"]),
             "created_at":              row["fetched_at"],
             "game":                    row["category"],   # drives layout routing in editor
+            "content_category":        row["content_category"] or "",
             "is_viral":                is_viral,
             "suggested_template":      suggested_template,
             "suggested_caption_style": suggested_caption_style,

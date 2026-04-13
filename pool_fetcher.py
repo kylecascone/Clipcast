@@ -503,6 +503,43 @@ def is_english_content(clip: dict) -> bool:
 # Two-layer quality filter
 # ══════════════════════════════════════════════════════════════════════════════
 
+_TITLE_SLANG: set = {
+    "kek", "lul", "lmao", "poggers", "pog", "monkas", "pepega",
+    "forsen", "copium", "hopium", "omegalul", "pepelaugh", "lulw",
+    "clap", "peepo", "trihard", "sadge", "ez", "xd", "lol",
+}
+
+
+def passes_quality_gate(clip: dict) -> bool:
+    """
+    Hard pre-filter before any other quality check.
+
+    Rejects clips that are provably low-broad-appeal before spending
+    compute on rule scoring or AI analysis.
+
+    Criteria:
+      - Must have >= 500 upvotes OR >= 100 000 views (proves off-platform traction)
+      - Title must be 3+ words (single/double-word titles are almost always inside jokes)
+      - Title must not consist primarily of streamer slang
+    """
+    upvotes    = int(clip.get("upvotes", 0) or 0)
+    view_count = int(clip.get("view_count", 0) or 0)
+
+    if upvotes < 500 and view_count < 100_000:
+        return False
+
+    title = (clip.get("viral_title") or clip.get("title") or "").strip()
+    words = title.split()
+    if len(words) <= 2:
+        return False
+
+    title_lower = title.lower()
+    if any(slang in title_lower.split() for slang in _TITLE_SLANG):
+        return False
+
+    return True
+
+
 def filter_and_score_clips(clips: List[Dict]) -> List[Dict]:
     """
     Run the two-layer quality filter on a list of raw clips.
@@ -527,11 +564,23 @@ def filter_and_score_clips(clips: List[Dict]) -> List[Dict]:
 
     auto_approved: List[Dict] = []
     needs_ai: List[Dict] = []
+    gate_rejected_count    = 0
     rule_rejected_count    = 0
     safety_rejected_count  = 0
     language_rejected_count = 0
 
     for clip in clips:
+        # Phase 3 quality gate — must have proven engagement and a readable title
+        if not passes_quality_gate(clip):
+            gate_rejected_count += 1
+            logger.debug(
+                "Quality gate rejected: %s (upvotes=%s views=%s)",
+                clip.get("title", "")[:60],
+                clip.get("upvotes", 0),
+                clip.get("view_count", 0),
+            )
+            continue
+
         if not is_english_content(clip):
             language_rejected_count += 1
             print(f"  Skipped non-English: {clip.get('title','')[:60]}")
@@ -579,12 +628,12 @@ def filter_and_score_clips(clips: List[Dict]) -> List[Dict]:
 
     all_approved.sort(key=lambda c: float(c.get("final_score") or 0), reverse=True)
 
-    total_rejected = language_rejected_count + safety_rejected_count + rule_rejected_count + ai_rejected_count
+    total_rejected = gate_rejected_count + language_rejected_count + safety_rejected_count + rule_rejected_count + ai_rejected_count
     print(
         f"  Pool total: {len(all_approved)} approved | "
         f"{total_rejected} rejected "
-        f"({language_rejected_count} non-English, {safety_rejected_count} safety, "
-        f"{rule_rejected_count} rule, {ai_rejected_count} AI)"
+        f"({gate_rejected_count} quality-gate, {language_rejected_count} non-English, "
+        f"{safety_rejected_count} safety, {rule_rejected_count} rule, {ai_rejected_count} AI)"
     )
     if all_approved:
         top = all_approved[0]

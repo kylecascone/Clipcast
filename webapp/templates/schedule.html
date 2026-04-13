@@ -176,6 +176,8 @@ const CONTENT_TYPES = [
   'Any','Gaming','Just Chatting','IRL','Sports',
   'Funny','Rage','Fail','Wholesome','Public Freakout'
 ];
+// content_category values — map to the pool's content_category column
+const CATEGORIES = ['Any','gaming','sports','fails','news','podcast','trending'];
 
 let creators = [];
 let schedule = {};
@@ -240,6 +242,10 @@ function makeSlotCard(day, index, slot) {
     `<option value="${t}"${slot.content_type === t ? ' selected' : ''}>${t}</option>`
   ).join('');
 
+  const categoryOptions = CATEGORIES.map(c =>
+    `<option value="${c}"${(slot.category || 'Any') === c ? ' selected' : ''}>${c.charAt(0).toUpperCase() + c.slice(1)}</option>`
+  ).join('');
+
   const platform = slot.platform || 'both';
 
   card.innerHTML = `
@@ -247,6 +253,10 @@ function makeSlotCard(day, index, slot) {
     <div class="slot-label">Time</div>
     <input type="time" value="${slot.time || '12:00'}"
       onchange="updateSlot('${escAttr(day)}',${index},'time',this.value)">
+    <div class="slot-label">Category</div>
+    <select onchange="updateSlot('${escAttr(day)}',${index},'category',this.value)">
+      ${categoryOptions}
+    </select>
     <div class="slot-label">Creator</div>
     <select onchange="updateSlot('${escAttr(day)}',${index},'creator',this.value)">
       ${creatorOptions}
@@ -276,7 +286,7 @@ function makeSlotCard(day, index, slot) {
 
 function addSlot(day) {
   if (!schedule[day]) schedule[day] = [];
-  schedule[day].push({ time: '12:00', creator: '', content_type: 'Any', platform: 'both' });
+  schedule[day].push({ time: '12:00', category: 'Any', creator: '', content_type: 'Any', platform: 'both' });
   renderGrid();
 }
 

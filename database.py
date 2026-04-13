@@ -424,6 +424,8 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
         "ALTER TABLE shared_clips ADD COLUMN hashtags_tiktok TEXT",
         "ALTER TABLE shared_clips ADD COLUMN hashtags_youtube TEXT",
         "ALTER TABLE shared_clips ADD COLUMN hashtags_instagram TEXT",
+        # content category for schedule-based filtering (Phase 2)
+        "ALTER TABLE shared_clips ADD COLUMN content_category TEXT DEFAULT ''",
     ]
     for sql in migrations:
         try:

@@ -90,86 +90,62 @@ def analyze_clip_with_ai(clip: Dict[str, Any]) -> Dict[str, Any]:
     upvotes    = clip.get("upvotes") or 0
     source     = _sanitize(clip.get("discovery_source") or "", 100)
 
-    prompt = f"""You are a viral TikTok hook writer for a short clip posting account with 2 million followers. Your titles stop people mid-scroll.
+    prompt = f"""You are a viral social media expert. Your job is to rewrite clip titles to maximize clicks and views on YouTube Shorts, TikTok, and Instagram Reels.
 
-Every title you write must:
-- Immediately tell viewers what the exciting/funny/shocking moment IS
-- Create curiosity or strong emotion in under 8 words
-- Use present tense and active language
-- End with ONE highly relevant emoji
-- Never be a generic label — always describe the MOMENT not the object
+RULES:
+1. Title MUST be 6-12 words
+2. Title MUST create curiosity or emotional reaction
+3. Title MUST be understandable by someone who has never seen this streamer/content before
+4. Use emojis strategically (1-2 max)
+5. NO streamer-specific slang (no kek, pog, lul, copium, monkas, pepega etc)
+6. NO inside jokes — every word must land for a complete stranger
+7. Lead with the most shocking/funny/unexpected element
 
-BAD titles (never write these):
-- 'pikachu cake' — just a label, no emotion, no hook
-- 'funny moment' — too vague
-- 'gaming clip' — means nothing
-- 'xQc reacts' — to what?? always finish the thought
+GOOD title examples:
+- "This goalkeeper had absolutely no idea what was coming 😳"
+- "Streamer wins $50,000 and immediately does THIS with it 💀"
+- "The crowd went completely silent after this happened 🤯"
+- "Nobody expected this player to do THIS in front of millions"
+- "She trained for 10 years and it all came down to this moment"
+- "The ref made the worst call anyone has ever seen 😤"
+- "He said he'd retire if this happened — it happened 👀"
 
-GOOD titles for the same content:
-- 'She built this Pikachu cake LIVE on stream 🎂'
-- 'Streamer spends 8 hours making this cake on camera 😱'
-- 'Chat went insane when she revealed this cake 🔥'
-- 'Tyler1 loses his mind after getting destroyed in ranked 💀'
-- 'Kai Cenat breaks down crying after fan donation 😭'
-- 'IShowSpeed gets banned live for THIS moment 😳'
-- 'Streamer catches cheater mid-game and goes off 🤯'
+BAD title examples (NEVER write these):
+- "LMFAOOOOO" — no context
+- "last melon" — inside joke
+- "buddy" — single word, no hook
+- "KEK" — streamer slang
+- "figured it out" — vague, no emotional pull
+- "xQc clip" — just a label
+- "POGGERS moment" — slang
 
-Content types and how to title them:
-- Cooking/art streams: focus on the reveal, the reaction, the time spent
-- Gaming rage: what happened that caused the rage
-- Wholesome moments: what happened that was heartwarming
-- Bans/drama: what they did and why it matters
-- Donations/gifts: the emotional reaction
-- Fails: what went wrong and how bad
-- Records/achievements: what was accomplished
-
-Analyze this clip:
-Title: {title}
+Content: {title}
 Creator: {creator}
 Category: {category}
-Duration: {duration} seconds
-Theme: {theme}
 Views: {view_count:,}
 Upvotes: {upvotes:,}
-Source: {source}
 Transcript: {transcript or 'Not available'}
 
-Respond ONLY with JSON:
-{{
-  "self_contained_score": <0-10>,
-  "entertainment_score": <0-10>,
-  "tiktok_fit_score": <0-10>,
-  "should_post": <true or false>,
-  "skip_reason": <null or one sentence only if truly unwatchable>,
-  "viral_title_suggestion": <punchy hook title under 60 chars with emoji>
-}}
-
-CRITICAL: viral_title_suggestion must describe the MOMENT not just label the content. Make someone NEED to watch it.
-Rejection rate target: under 10%. Your job is scoring and titling, not gatekeeping."""
+Write ONLY the new viral title. Nothing else."""
 
     try:
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=200,
+            max_tokens=80,
             messages=[{"role": "user", "content": prompt}],
         )
-        text = response.content[0].text.strip()
-        text = text.replace("```json", "").replace("```", "").strip()
-        result = json.loads(text)
+        # Response is now plain text — just the viral title
+        new_title = response.content[0].text.strip().strip('"').strip("'")
 
-        ai_score = (
-            float(result.get("entertainment_score", 5)) * 0.4
-            + float(result.get("tiktok_fit_score",  5)) * 0.4
-            + float(result.get("self_contained_score", 5)) * 0.2
-        ) * 10.0
-
-        suggestion = result.get("viral_title_suggestion") or title or None
+        # Sanity-check: must be non-empty and reasonably sized
+        if not new_title or len(new_title) < 5 or len(new_title) > 200:
+            new_title = title or None
 
         return {
-            "should_post":            bool(result.get("should_post", True)),
-            "ai_quality_score":       round(ai_score, 1),
-            "skip_reason":            result.get("skip_reason"),
-            "viral_title_suggestion": suggestion,
+            "should_post":            True,   # Phase 3 quality gate handles filtering
+            "ai_quality_score":       75.0,   # AI-rewritten title gets default score
+            "skip_reason":            None,
+            "viral_title_suggestion": new_title,
         }
 
     except anthropic.BadRequestError as exc:
