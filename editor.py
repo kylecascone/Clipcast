@@ -317,6 +317,11 @@ def process_package(
 
         # Step 6.5: Hook text card — white rounded rectangle centered above video frame
         hook_text = (clips[0].get("viral_title") or clips[0].get("title", "")) if clips else ""
+        # Strip category labels (e.g. "| Gaming |") and hashtags — these can leak in
+        # from TikTok caption strings that sometimes end up in the title fields.
+        if "|" in hook_text:
+            hook_text = hook_text.split("|")[0].strip()
+        hook_text = " ".join(w for w in hook_text.split() if not w.startswith("#"))
         # Compute fg_y by probing the first source clip (same math as build_layout_fullframe)
         hook_fg_y = 400  # fallback: assume typical 16:9 clip
         src_for_hook = next((p for p in local_paths if p and p.exists()), None)

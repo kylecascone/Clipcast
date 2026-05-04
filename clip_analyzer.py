@@ -100,6 +100,7 @@ RULES:
 5. NO streamer-specific slang (no kek, pog, lul, copium, monkas, pepega etc)
 6. NO inside jokes — every word must land for a complete stranger
 7. Lead with the most shocking/funny/unexpected element
+8. IMPORTANT: Generate a UNIQUE title specific to what actually happens in THIS clip. Do not use generic templates like "Nobody saw this coming", "This moment was UNBELIEVABLE", or "You won't believe what happened". The title must describe something specific about THIS clip based on the creator, category, and transcript provided.
 
 GOOD title examples:
 - "This goalkeeper had absolutely no idea what was coming 😳"

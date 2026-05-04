@@ -80,22 +80,6 @@ def run_automated_pipeline(
         logger.error("Configuration error: %s", e)
         return
 
-    # ── HARD GATE: never queue anything without an explicit schedule ─────────────
-    # This is the authoritative check. All queue additions are gated on this;
-    # no code path may bypass it. If the user hasn't configured any posting
-    # slots in schedule.yaml, the pipeline still runs (pool refresh, scoring)
-    # but nothing is ever added to the posting queue.
-    if not schedule_slots_exist():
-        logger.info(
-            "run_automated_pipeline: no schedule slots configured in schedule.yaml "
-            "— pipeline aborted. Configure a posting schedule in the webapp to enable auto-posting."
-        )
-        console.print(
-            "  [yellow]No schedule slots configured — pipeline skipped.[/yellow]\n"
-            "  [dim]Set a posting schedule in the webapp (Schedule page) to enable auto-posting.[/dim]"
-        )
-        return
-
     run_start = datetime.now()
     logger.info(
         "=== Automated pipeline started at %s ===",
@@ -329,34 +313,14 @@ def run_automated_pipeline(
             "  [yellow]Test mode: processing 3 packages only[/yellow]"
         )
 
-    # ── Step 6–8: Edit, caption, and queue each package ────────────────────────
-    from posting_queue import enforce_daily_limit, add_package_to_queue
+    # ── Step 6–8: Edit, caption, and store each package ──────────────────────
+    # The pipeline NEVER adds to the posting queue. Posting is triggered
+    # exclusively by _check_yaml_schedule() when a slot time fires.
     from captions import generate_caption
     from editor import process_package
 
-    # Check whether the user has configured any posting slots.
-    # If schedule.yaml is empty or missing, process and store clips in the DB
-    # but DO NOT add them to the posting queue — the user hasn't said when to post.
-    _sched = load_schedule()
-    _DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    _schedule_has_slots = any(_sched.get(day) for day in _DAYS)
-    if not _schedule_has_slots and not test_mode:
-        logger.info(
-            "schedule.yaml has no slots — packages will be processed and stored "
-            "but NOT queued. Configure a schedule in the webapp to enable posting."
-        )
-        console.print(
-            "  [dim]No schedule slots configured — clips will be processed "
-            "and stored but not queued for posting.[/dim]\n"
-            "  [dim]Set a posting schedule in the webapp to enable auto-posting.[/dim]"
-        )
-
+    processed_count = 0
     for pkg in packages:
-        if enforce_daily_limit(user_prefs, user_id=user_id):
-            logger.info("Daily post limit reached. Stopping queue additions for today.")
-            console.print("  [yellow]Daily post limit reached. Remaining packages saved for tomorrow.[/yellow]")
-            break
-
         # ── Generate caption ───────────────────────────────────────────────────
         lead_clip = pkg["clips"][0] if pkg["clips"] else {}
         caption_text = generate_caption(
@@ -401,7 +365,7 @@ def run_automated_pipeline(
             )
             continue
 
-        # Update package with compiled path
+        # Update package with compiled path and mark as processed (ready to post)
         database.update_package_field(package_id, "compiled_path", output_path)
         database.update_package_field(package_id, "status", "processed")
         pkg["compiled_path"] = output_path
@@ -419,25 +383,9 @@ def run_automated_pipeline(
             )
             continue
 
-        # ── Add to posting queue ───────────────────────────────────────────────
-        if not test_mode and _schedule_has_slots:
-            queue_id, slot = add_package_to_queue(
-                package_id=package_id,
-                user_prefs=user_prefs,
-                mode="auto",
-                user_id=user_id,
-            )
-            console.print(
-                f"  [green]Queued[/green] package {package_id} "
-                f"→ post at [bold]{slot.strftime('%Y-%m-%d %H:%M')}[/bold]"
-            )
-        elif not test_mode:
-            # No schedule slots — clip is processed and ready but held back.
-            console.print(
-                f"  [dim]Package {package_id} processed and stored "
-                f"(not queued — no schedule slots configured)[/dim]"
-            )
-        else:
+        processed_count += 1
+
+        if test_mode:
             _test_title = (
                 (pkg["clips"][0].get("viral_title") or pkg["clips"][0].get("title", ""))
                 if pkg.get("clips") else pkg.get("caption_text", "")
@@ -449,14 +397,30 @@ def run_automated_pipeline(
             )
             console.print(
                 f"  [dim]Would upload to:[/dim] "
-                + ", ".join(
-                    f"[bold]{p}[/bold]"
-                    + (" → " + f"https://youtube.com/shorts/<id>" if p == "youtube_shorts" else "")
-                    for p in _test_platforms
-                )
+                + ", ".join(f"[bold]{p}[/bold]" for p in _test_platforms)
             )
             if _test_title:
                 console.print(f"  [dim]Title:[/dim] {_test_title[:80]}")
+        else:
+            console.print(
+                f"  [green]Package {package_id} processed and stored[/green] "
+                f"— awaiting schedule slot to post"
+            )
+
+    # Log pipeline outcome
+    _sched_check = load_schedule()
+    _DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    _has_slots = any(_sched_check.get(d) for d in _DAYS)
+    if not _has_slots and not test_mode:
+        logger.info(
+            "Pipeline ran — pool refreshed, %d package(s) processed and stored, "
+            "no schedule slots configured, nothing queued.",
+            processed_count,
+        )
+        console.print(
+            f"  [dim]Pipeline ran — {processed_count} package(s) ready. "
+            f"No schedule slots configured — set a schedule in the webapp to enable posting.[/dim]"
+        )
 
     run_end = datetime.now()
     duration = (run_end - run_start).total_seconds()
@@ -731,6 +695,66 @@ def get_slots_for_now(sched: Dict[str, Any]) -> list:
     return [s for s in sched.get(day_name, []) if s.get("time") == current_time]
 
 
+def _pick_package_for_slot(slot: Dict[str, Any], user_id: int = 1) -> Optional[Dict]:
+    """
+    Find the best unposted processed package matching a schedule slot's criteria.
+
+    Tries to match by content_category and creator via shared_clips; falls back
+    to the oldest processed package if no category match is found.
+
+    Returns a full package dict (from database.get_packages_by_status) or None.
+    """
+    category  = (slot.get("category", "") or "").lower().strip()
+    creator   = (slot.get("creator", "") or "").strip()
+    min_score = float(slot.get("min_score", 0) or 0)
+
+    candidates = database.get_packages_by_status("processed", user_id=user_id)
+    if not candidates:
+        return None
+
+    # No criteria — return the oldest ready package
+    if category in ("", "any") and not creator:
+        return candidates[0]
+
+    # Try to match each candidate package's clips against shared_clips criteria
+    try:
+        conn = database.get_connection()
+        for pkg in candidates:
+            clip_ids = pkg.get("clip_ids", [])
+            if not clip_ids:
+                continue
+            placeholders = ",".join("?" * len(clip_ids))
+            url_rows = conn.execute(
+                f"SELECT url FROM clips WHERE clip_id IN ({placeholders})",
+                clip_ids,
+            ).fetchall()
+            urls = [r[0] for r in url_rows if r[0]]
+            if not urls:
+                continue
+            url_ph = ",".join("?" * len(urls))
+            sc_query = (
+                f"SELECT 1 FROM shared_clips WHERE url IN ({url_ph}) "
+                f"AND COALESCE(final_score, score, 0) >= ?"
+            )
+            sc_params: List[Any] = urls + [min_score]
+            if category and category != "any":
+                sc_query += " AND content_category = ?"
+                sc_params.append(category)
+            if creator:
+                sc_query += " AND creator_name = ?"
+                sc_params.append(creator)
+            sc_query += " LIMIT 1"
+            if conn.execute(sc_query, sc_params).fetchone():
+                conn.close()
+                return pkg
+        conn.close()
+    except Exception as exc:
+        logger.warning("_pick_package_for_slot: DB error: %s", exc)
+
+    # No category match — fall back to oldest processed package
+    return candidates[0]
+
+
 def filter_pool_by_slot(slot: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Return up to 10 pool clips matching a schedule slot's criteria.
@@ -834,43 +858,89 @@ def start_scheduler(
         )
 
     def _check_yaml_schedule():
-        """Fire pipeline runs for any YAML schedule slots due this minute."""
+        """Post one clip per YAML schedule slot that fires this minute."""
+        from rich.console import Console as _Console
+        from uploader import upload_package as _upload_package
+
+        _console = _Console()
         sched = load_schedule()
         if not sched:
             return
         due_slots = get_slots_for_now(sched)
+        if not due_slots:
+            return
+
+        now      = datetime.now()
+        day_name = now.strftime("%A")
+
         for slot in due_slots:
-            clips = filter_pool_by_slot(slot)
-            if not clips:
-                logger.info("YAML schedule slot at %s: no matching clips found.", slot.get("time"))
+            slot_time   = slot.get("time", "?")
+            category    = slot.get("category", "Any") or "Any"
+            platform    = slot.get("platform", "both") or "both"
+            creator_str = slot.get("creator", "") or ""
+
+            pkg = _pick_package_for_slot(slot, user_id=user_id)
+            if not pkg:
+                logger.info(
+                    "Schedule slot %s %s: no processed packages ready "
+                    "(category=%r, creator=%r). Pool will refresh automatically.",
+                    day_name, slot_time, category, creator_str,
+                )
+                _console.print(
+                    f"  [yellow]Schedule slot {day_name} {slot_time}: "
+                    f"no processed packages ready — pool will refresh automatically.[/yellow]"
+                )
                 continue
+
             logger.info(
-                "YAML schedule slot at %s: triggering pipeline for %d clip(s) "
-                "(creator=%r, type=%r, platform=%r)",
-                slot.get("time"), len(clips),
-                slot.get("creator", "any"),
-                slot.get("content_type", "Any"),
-                slot.get("platform", "both"),
+                "Schedule slot fired: %s %s %s — posting 1 clip (package_id=%d)",
+                day_name, slot_time, category, pkg["package_id"],
             )
-            # Inject slot platform preference into prefs for this run
+            _console.print(
+                f"\n[bold green]Schedule slot fired:[/bold green] "
+                f"{day_name} {slot_time} {category} — posting 1 clip"
+            )
+
+            # Build slot_prefs with platform override
             slot_prefs = dict(user_prefs)
-            plat = slot.get("platform", "both")
-            if plat == "tiktok":
-                slot_prefs["post_to_tiktok"] = True
-                slot_prefs["post_to_youtube"] = False
-            elif plat == "youtube":
-                slot_prefs["post_to_tiktok"] = False
-                slot_prefs["post_to_youtube"] = True
-            threading.Thread(
-                target=run_automated_pipeline,
-                kwargs=dict(
-                    user_config=user_config,
-                    user_prefs=slot_prefs,
-                    test_mode=test_mode,
+            if platform == "tiktok":
+                slot_prefs["target_platforms"] = ["tiktok"]
+            elif platform == "youtube":
+                slot_prefs["target_platforms"] = ["youtube_shorts"]
+            # "both" leaves target_platforms as user default
+
+            post_ids = _upload_package(
+                pkg,
+                user_config=user_config,
+                user_prefs=slot_prefs,
+                test_mode=test_mode,
+            )
+
+            any_success = bool(post_ids and any(post_ids.values()))
+            if any_success:
+                database.update_package_field(pkg["package_id"], "status", "posted")
+                for clip_id in pkg.get("clip_ids", []):
+                    database.update_clip_status(clip_id, "posted")
+                logger.info(
+                    "Package %d posted via schedule slot. IDs: %s",
+                    pkg["package_id"],
+                    {k: v for k, v in post_ids.items() if v},
+                )
+                _console.print(
+                    "  [green]Posted successfully[/green] → "
+                    + ", ".join(f"{k}: {v}" for k, v in post_ids.items() if v)
+                )
+            else:
+                database.update_package_field(pkg["package_id"], "status", "failed")
+                database.log_error(
+                    message=f"Schedule slot upload failed for package {pkg['package_id']}",
+                    step="upload",
+                    package_id=pkg["package_id"],
                     user_id=user_id,
-                ),
-                daemon=True,
-            ).start()
+                )
+                logger.error(
+                    "Schedule slot upload failed for package %d.", pkg["package_id"]
+                )
 
     # Run immediately on start, then every 6 hours
     schedule.every(AUTO_PIPELINE_INTERVAL_HOURS).hours.do(_run_pipeline)

@@ -307,8 +307,8 @@ def upload_package(
 
         elif platform == "youtube_shorts":
             # Enrich package with shared_clip data so post_package can pull
-            # hashtags and thumbnail from the DB.
-            _clip_ctx: Dict[str, Any] = {"title": caption or "Viral Clip 🔥"}
+            # viral_title, hashtags and thumbnail from the DB.
+            _clip_ctx: Dict[str, Any] = {"title": "Viral Clip 🔥"}
             _clip_ids = package.get("clip_ids") or []
             if _clip_ids:
                 try:
@@ -320,13 +320,17 @@ def upload_package(
                     ).fetchone()
                     if _clip_row:
                         _sc_row = _conn.execute(
-                            "SELECT shared_clip_id, title, creator_name, "
+                            "SELECT shared_clip_id, viral_title, title, creator_name, "
                             "hashtags_youtube, hashtags_tiktok, thumbnail_path "
                             "FROM shared_clips WHERE url = ? LIMIT 1",
                             (_clip_row[0],),
                         ).fetchone()
                         if _sc_row:
                             _clip_ctx = dict(_sc_row)
+                            # Ensure viral_title surfaces as 'title' so post_package
+                            # uses it; fall back to raw title if viral_title is empty.
+                            _vt = _clip_ctx.get("viral_title") or ""
+                            _clip_ctx["title"] = _vt or _clip_ctx.get("title") or "Viral Clip 🔥"
                     _conn.close()
                 except Exception as _exc:
                     logger.warning("youtube_shorts clip lookup failed: %s", _exc)
