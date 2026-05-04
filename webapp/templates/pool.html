@@ -18,49 +18,113 @@
 {% endblock %}
 
 {% block content %}
-<div class="pool-stats-bar" id="pool-stats-bar">
+
+<!-- ── Filters + stats bar ──────────────────────────────────────────────── -->
+<div class="cat-filters" id="cat-filters">
+  <button class="cat-filter-btn active" data-cat="" onclick="setCat('', this)">All</button>
+  <button class="cat-filter-btn" data-cat="gaming" onclick="setCat('gaming', this)">
+    <span class="badge-gaming" style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-right:4px;">G</span>Gaming
+  </button>
+  <button class="cat-filter-btn" data-cat="sports" onclick="setCat('sports', this)">
+    <span class="badge-sports" style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-right:4px;">S</span>Sports
+  </button>
+  <button class="cat-filter-btn" data-cat="fails" onclick="setCat('fails', this)">
+    <span class="badge-fails" style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-right:4px;">F</span>Fails
+  </button>
+  <button class="cat-filter-btn" data-cat="news" onclick="setCat('news', this)">
+    <span class="badge-news" style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-right:4px;">N</span>News
+  </button>
+  <button class="cat-filter-btn" data-cat="podcast" onclick="setCat('podcast', this)">
+    <span class="badge-podcast" style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-right:4px;">P</span>Podcast
+  </button>
+  <button class="cat-filter-btn" data-cat="trending" onclick="setCat('trending', this)">
+    <span class="badge-trending" style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-right:4px;">T</span>Trending
+  </button>
+</div>
+
+<div class="pool-stats-bar">
   <span id="pool-count">Loading...</span>
 </div>
 
 <div class="pool-grid" id="pool-grid">
-  <div class="empty-state">Loading clip pool...</div>
+  <div style="padding:40px;text-align:center;color:#4a5568;">Loading clip pool...</div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+let allClips = [];
+let activeCat = '';
+
+function setCat(cat, btn) {
+  activeCat = cat;
+  document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPool();
+}
+
 function loadPool() {
   const source = document.getElementById('pool-source-filter').value;
-  const url = `/api/pool?limit=100${source ? '&source=' + source : ''}`;
+  const url = `/api/pool?limit=200${source ? '&source=' + source : ''}`;
   fetch(url)
     .then(r => r.json())
     .then(items => {
-      document.getElementById('pool-count').textContent = `${items.length} clips`;
-      if (!items.length) {
-        document.getElementById('pool-grid').innerHTML = '<div class="empty-state">No clips in pool. Click "Fetch New Clips" to populate.</div>';
-        return;
-      }
-      document.getElementById('pool-grid').innerHTML = items.map(clip => `
-        <div class="pool-card">
-          <div class="pool-thumb ${clip.source}">
-            ${clip.thumbnail_url
-              ? `<img src="${clip.thumbnail_url}" alt="" onerror="this.style.display='none'">`
-              : `<div class="pool-no-thumb"><i class="bi bi-play-circle"></i></div>`
-            }
-            <span class="pool-source-tag ${clip.source}">${clip.source}</span>
-          </div>
-          <div class="pool-body">
-            <div class="pool-title" title="${escHtml(clip.title || '')}">${escHtml((clip.title || 'Untitled').slice(0, 55))}</div>
-            <div class="pool-creator">${escHtml(clip.creator_name || '—')}</div>
-            <div class="pool-meta">
-              <span><i class="bi bi-eye"></i> ${fmtNum(clip.view_count)}</span>
-              <span><i class="bi bi-clock"></i> ${fmtDur(clip.duration)}</span>
-              ${clip.score ? `<span class="score-badge">${Math.round(clip.score)}</span>` : ''}
-            </div>
+      allClips = items;
+      renderPool();
+    });
+}
+
+function renderPool() {
+  const filtered = activeCat
+    ? allClips.filter(c => (c.category || '').toLowerCase() === activeCat)
+    : allClips;
+
+  document.getElementById('pool-count').textContent = `${filtered.length} clip${filtered.length === 1 ? '' : 's'}${activeCat ? ' · ' + activeCat : ''}`;
+
+  if (!filtered.length) {
+    document.getElementById('pool-grid').innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <i class="bi bi-collection-play empty-state-icon"></i>
+        <span class="empty-state-title">No clips found</span>
+        <span class="empty-state-sub">${activeCat ? 'No ' + activeCat + ' clips in pool.' : 'Click "Fetch New Clips" to populate the pool.'}</span>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('pool-grid').innerHTML = filtered.map(clip => {
+    const score = clip.score ? Math.round(clip.score) : null;
+    const scoreCls = score === null ? '' : score >= 70 ? 'score-high' : score >= 50 ? 'score-mid' : 'score-low';
+    const scoreHtml = score !== null
+      ? `<span class="score-badge ${scoreCls}">${score}</span>`
+      : '';
+
+    const cat = (clip.category || '').toLowerCase();
+    const catHtml = cat
+      ? `<span class="pool-cat-tag badge-${cat}" style="background:var(--cat-bg,rgba(108,99,255,0.2));color:var(--cat-color,#a78bfa);">${cat}</span>`
+      : '';
+
+    return `
+      <div class="pool-card">
+        <div class="pool-thumb">
+          ${clip.thumbnail_url
+            ? `<img src="${escHtml(clip.thumbnail_url)}" alt="" onerror="this.style.display='none'">`
+            : `<div class="pool-no-thumb"><i class="bi bi-play-circle"></i></div>`
+          }
+          <span class="pool-source-tag ${escHtml(clip.source || '')}">${escHtml(clip.source || '')}</span>
+          ${catHtml}
+        </div>
+        <div class="pool-body">
+          <div class="pool-title" title="${escHtml(clip.title || '')}">${escHtml((clip.title || 'Untitled').slice(0, 60))}</div>
+          <div class="pool-creator">${escHtml(clip.creator_name || '—')}</div>
+          <div class="pool-meta">
+            <span><i class="bi bi-eye"></i> ${fmtNum(clip.view_count)}</span>
+            <span><i class="bi bi-clock"></i> ${fmtDur(clip.duration)}</span>
+            ${scoreHtml}
           </div>
         </div>
-      `).join('');
-    });
+      </div>`;
+  }).join('');
 }
 
 function triggerRefresh() {
@@ -70,21 +134,21 @@ function triggerRefresh() {
 }
 
 function fmtNum(n) {
-  if (!n) return '0';
-  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  if (!n && n !== 0) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
   return String(n);
 }
 
 function fmtDur(s) {
   if (!s) return '—';
   const m = Math.floor(s / 60), sec = Math.round(s % 60);
-  return `${m}:${String(sec).padStart(2,'0')}`;
+  return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
 function escHtml(str) {
   const d = document.createElement('div');
-  d.textContent = str;
+  d.textContent = str || '';
   return d.innerHTML;
 }
 

@@ -233,10 +233,12 @@ function makeSlotCard(day, index, slot) {
   const card = document.createElement('div');
   card.className = 'slot-card';
 
-  const creatorOptions = ['<option value="">Any Creator</option>']
-    .concat(creators.slice(0, 150).map(c =>
-      `<option value="${escHtml(c.name)}"${slot.creator === c.name ? ' selected' : ''}>${escHtml(c.name)}</option>`
-    )).join('');
+  const creatorOptions = ['<option value="">Any Creator</option>', '<option value="__trending__">Trending Now</option>']
+    .concat(creators.slice(0, 50).map(c => {
+      const name = c.creator_name || c.name || '';
+      const viewers = c.viewer_count ? ` (${(c.viewer_count/1000).toFixed(0)}K)` : '';
+      return `<option value="${escHtml(name)}"${slot.creator === name ? ' selected' : ''}>${escHtml(name)}${viewers}</option>`;
+    })).join('');
 
   const typeOptions = CONTENT_TYPES.map(t =>
     `<option value="${t}"${slot.content_type === t ? ' selected' : ''}>${t}</option>`

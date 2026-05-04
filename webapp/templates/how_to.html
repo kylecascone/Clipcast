@@ -4,218 +4,141 @@
 {% block page_title %}How To{% endblock %}
 
 {% block content %}
-<p style="color:#6b7280;font-size:14px;margin-bottom:28px;">Get up and running in under 5 minutes</p>
 
+<p style="font-size:13px;color:#8892b0;margin-bottom:28px;">Get up and running in under 5 minutes. Follow these steps to start auto-posting viral clips.</p>
+
+<!-- ── Steps ──────────────────────────────────────────────────────────────── -->
 <div class="howto-steps">
 
   <div class="step-card">
     <div class="step-number">1</div>
     <div class="step-content">
-      <h3>Connect Your Accounts</h3>
-      <p>Go to the <a href="/accounts">Accounts</a> page and connect your TikTok, YouTube, and Instagram accounts. You'll need your session cookies from each platform.</p>
-      <div class="step-tip">Tip: Use browser dev tools → Application → Cookies to find your sessionid cookie</div>
+      <h3>Connect Your YouTube Account</h3>
+      <p>Click <a href="{{ url_for('accounts') }}">Accounts</a> in the sidebar, enter your OAuth credentials from Google Cloud Console, then click <strong>Connect with Google</strong>. ClipCast will authenticate using the official YouTube Data API v3 and display your channel name once connected.</p>
     </div>
   </div>
 
   <div class="step-card">
     <div class="step-number">2</div>
     <div class="step-content">
-      <h3>Refresh Your Clip Pool</h3>
-      <p>Click <strong>Refresh Pool</strong> on the Dashboard. ClipCast will automatically discover viral clips from Reddit, YouTube, and Twitch and score them by viral potential.</p>
-      <div class="step-tip">Tip: Run a refresh every day to keep your pool fresh. Aim for 200+ clips in the pool.</div>
+      <h3>Set Your Content Categories &amp; Schedule</h3>
+      <p>Go to <a href="{{ url_for('schedule') }}">Schedule</a> and create posting slots. Pick your content categories (Gaming, Sports, Fails, etc.), set the posting time, choose your target platform, and optionally pin a specific creator. Save your slots — ClipCast will post exactly one clip per slot, never more.</p>
     </div>
   </div>
 
   <div class="step-card">
     <div class="step-number">3</div>
     <div class="step-content">
-      <h3>Set Your Posting Schedule</h3>
-      <p>Go to the <a href="/schedule">Schedule</a> page and add time slots for each day. Set which creator or content type you want for each slot, which platforms to post to, and a minimum quality score.</p>
-      <div class="step-tip">Tip: Start with 2–3 posts per day. Consistency beats volume when building a new account.</div>
+      <h3>ClipCast Discovers Trending Creators Automatically</h3>
+      <p>Every 6 hours, ClipCast scans Twitch for the top 50 live streamers and cross-references Reddit viral posts (1000+ upvotes). The highest-scoring clips surface automatically in your Clip Pool. You can also click <strong>Fetch New Clips</strong> on the <a href="{{ url_for('pool') }}">Clip Pool</a> page to refresh on demand.</p>
     </div>
   </div>
 
   <div class="step-card">
     <div class="step-number">4</div>
     <div class="step-content">
-      <h3>Run a Test</h3>
-      <p>Click <strong>Test Run</strong> on the Dashboard. ClipCast will process 3 clips without posting them so you can review the output videos before going live.</p>
-      <div class="step-tip">Tip: Check the processed videos in the Recent Videos section on the Dashboard.</div>
+      <h3>Videos Are Edited Automatically</h3>
+      <p>Each clip is processed through a full editing pipeline: vertical cropping or blurred background layout (auto-detected), animated word-by-word captions transcribed with Whisper AI, a hook text card overlay, and branding — all completed in 2–3 minutes. The final file is a 1080×1920 MP4 ready for upload.</p>
     </div>
   </div>
 
   <div class="step-card">
     <div class="step-number">5</div>
     <div class="step-content">
-      <h3>Go Live</h3>
-      <p>Click <strong>Post Now</strong> to run the full pipeline and post immediately, or let the schedule run automatically at your set times.</p>
-      <div class="step-tip">Tip: Monitor your Analytics page after the first week to see which content is performing best.</div>
+      <h3>Posts Go Out at Your Scheduled Times</h3>
+      <p>When a schedule slot fires, ClipCast selects the best matching clip from the pool (filtered by category, min score, and creator preference), processes it, and uploads automatically. Check <a href="{{ url_for('analytics') }}">Analytics</a> after a few days to see which content is getting the most views and engagement.</p>
     </div>
   </div>
 
 </div>
 
+<!-- ── FAQ ────────────────────────────────────────────────────────────────── -->
 <h2 class="faq-title">Frequently Asked Questions</h2>
 
 <div class="faq-list">
 
   <div class="faq-item">
     <div class="faq-question" onclick="toggleFaq(this)">
-      How often should I refresh the clip pool?
+      How does ClipCast find clips?
       <i class="bi bi-chevron-down faq-arrow"></i>
     </div>
-    <div class="faq-answer">Refresh once or twice a day. ClipCast automatically deduplicates clips so running it more often just keeps the pool topped up with fresh viral content.</div>
+    <div class="faq-answer">
+      ClipCast combines three discovery sources: the Twitch Trending API (top 50 live streamers by viewer count), Reddit viral posts filtered to 1000+ upvotes from gaming and entertainment subreddits, and YouTube Shorts discovery across 20+ content categories. All clips are de-duplicated and scored before entering your pool.
+    </div>
   </div>
 
   <div class="faq-item">
     <div class="faq-question" onclick="toggleFaq(this)">
-      How many posts per day should I schedule?
+      Does it post automatically?
       <i class="bi bi-chevron-down faq-arrow"></i>
     </div>
-    <div class="faq-answer">Start with 3–4 posts per day spread out across morning, afternoon, and evening. TikTok and YouTube Shorts reward consistency. Once your accounts are established you can scale to 6–8 per day.</div>
+    <div class="faq-answer">
+      Yes, once you configure a schedule. Posts go out exactly at your slot times — 1 clip per slot, never more. If no matching clip is found for a slot (e.g. minimum score too high, no clips from the specified creator), that slot is skipped and logged. You can also manually trigger a post from the Dashboard at any time.
+    </div>
   </div>
 
   <div class="faq-item">
     <div class="faq-question" onclick="toggleFaq(this)">
-      What minimum quality score should I use?
+      How many posts per day should I use?
       <i class="bi bi-chevron-down faq-arrow"></i>
     </div>
-    <div class="faq-answer">Set minimum score to 50 when starting out so you have enough clips to fill your schedule. As your pool grows you can raise it to 65–70 to only post the best content.</div>
+    <div class="faq-answer">
+      Start with 2–3 per day. TikTok and YouTube Shorts algorithms reward consistent daily posting over high volume. Spread your slots across morning, afternoon, and evening for best reach. Once your accounts are established and your clip pool is deep, you can scale to 5–6 per day.
+    </div>
   </div>
 
   <div class="faq-item">
     <div class="faq-question" onclick="toggleFaq(this)">
-      Will my accounts get banned for posting clips?
+      What's a "Min Score" in the schedule?
       <i class="bi bi-chevron-down faq-arrow"></i>
     </div>
-    <div class="faq-answer">ClipCast includes a DMCA music detector that flags clips with copyrighted music before posting. Clips with harmful or inappropriate content are filtered automatically. Still, always review your content and follow each platform's community guidelines.</div>
+    <div class="faq-answer">
+      Each clip receives a quality score from 0–100 based on view velocity (40%), clip duration fit (35%), and audio quality (25%). A bonus of up to 10 points is added for clips that match your target category. Set Min Score to filter out lower-quality clips — start at 40–50 while your pool is small, then raise to 60–70 as it grows.
+    </div>
   </div>
 
   <div class="faq-item">
     <div class="faq-question" onclick="toggleFaq(this)">
-      How does the AI quality scoring work?
+      Will my accounts get banned?
       <i class="bi bi-chevron-down faq-arrow"></i>
     </div>
-    <div class="faq-answer">Every clip gets scored 0–100 based on viral potential (views, upvotes, source), AI quality analysis (self-contained, entertaining, TikTok fit), and freshness. The AI also rewrites clip titles to be more engaging and TikTok-ready.</div>
+    <div class="faq-answer">
+      ClipCast uses official APIs only — YouTube Data API v3 and TikTok Official Content Posting API. No session cookies, no browser automation, no third-party scraping. This means you operate within each platform's terms of service. Note: always include proper attribution (creator name + source) and respect creator opt-out requests via the Blocked Creators list.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      Can I use specific creators only?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">
+      Yes — when creating a schedule slot, set a creator name (Twitch username or YouTube channel) and ClipCast will only post clips from that creator in that slot. Leave it blank to pull the best clip from the entire pool matching your other filters (category, min score, platform).
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      What video formats work for manual uploads?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">
+      Use the Editor page to submit a Twitch clip URL or YouTube video URL for manual processing. ClipCast will download, edit, and add captions automatically. Direct file uploads support MP4, MOV, and AVI up to 500 MB. Vertical (9:16) clips work best — horizontal clips are automatically converted with a blurred background fill layout.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      How do I see performance data?
+      <i class="bi bi-chevron-down faq-arrow"></i>
+    </div>
+    <div class="faq-answer">
+      Go to the <a href="{{ url_for('analytics') }}">Analytics</a> page. Data populates after your first posted clips — views and engagement metrics are pulled from the YouTube and TikTok APIs. The dashboard also shows today's total views, average engagement rate, and your best-performing platform at a glance.
+    </div>
   </div>
 
 </div>
 
-<style>
-.howto-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 40px;
-}
-
-.step-card {
-  display: flex;
-  gap: 20px;
-  background: #1a1d2e;
-  border: 1px solid #2a2d3e;
-  border-radius: 14px;
-  padding: 22px 24px;
-  align-items: flex-start;
-  transition: border-color 0.2s;
-}
-
-.step-card:hover { border-color: rgba(108,99,255,0.3); }
-
-.step-number {
-  width: 38px;
-  height: 38px;
-  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: white;
-  flex-shrink: 0;
-}
-
-.step-content h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  margin: 0 0 8px 0;
-}
-
-.step-content p {
-  font-size: 14px;
-  color: #9ca3af;
-  line-height: 1.6;
-  margin: 0 0 12px 0;
-}
-
-.step-content a { color: #6c63ff; text-decoration: none; }
-.step-content a:hover { text-decoration: underline; }
-
-.step-tip {
-  font-size: 13px;
-  color: #6b7280;
-  background: rgba(108,99,255,0.07);
-  border-left: 3px solid #6c63ff;
-  padding: 8px 12px;
-  border-radius: 0 6px 6px 0;
-}
-
-.faq-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: white;
-  margin: 0 0 16px 0;
-}
-
-.faq-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.faq-item {
-  background: #1a1d2e;
-  border: 1px solid #2a2d3e;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.faq-question {
-  padding: 15px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #e2e8f0;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background 0.15s;
-  user-select: none;
-}
-
-.faq-question:hover { background: rgba(255,255,255,0.03); }
-
-.faq-arrow {
-  font-size: 13px;
-  color: #6b7280;
-  transition: transform 0.2s;
-  flex-shrink: 0;
-}
-
-.faq-answer {
-  display: none;
-  padding: 14px 20px 16px;
-  font-size: 14px;
-  color: #9ca3af;
-  line-height: 1.6;
-  border-top: 1px solid #2a2d3e;
-}
-
-.faq-item.open .faq-arrow   { transform: rotate(180deg); }
-.faq-item.open .faq-answer  { display: block; }
-</style>
 {% endblock %}
 
 {% block scripts %}

@@ -16,48 +16,90 @@
 {% endblock %}
 
 {% block content %}
-<!-- Stats row -->
+
+<!-- ── Stat cards ──────────────────────────────────────────────────────────── -->
 <div class="stats-grid">
+
   <div class="stat-card">
-    <div class="stat-icon"><i class="bi bi-collection-play"></i></div>
+    <div class="stat-icon">
+      <i class="bi bi-collection-play"></i>
+    </div>
     <div class="stat-body">
       <div class="stat-value" id="stat-pool">—</div>
       <div class="stat-label">Clips in Pool</div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-icon orange"><i class="bi bi-clock-history"></i></div>
+
+  <div class="stat-card orange">
+    <div class="stat-icon orange">
+      <i class="bi bi-clock-history"></i>
+    </div>
     <div class="stat-body">
       <div class="stat-value" id="stat-queue">—</div>
       <div class="stat-label">Queued Posts</div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+
+  <div class="stat-card green">
+    <div class="stat-icon green">
+      <i class="bi bi-check-circle"></i>
+    </div>
     <div class="stat-body">
       <div class="stat-value" id="stat-today">—</div>
       <div class="stat-label">Posted Today</div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-icon cyan"><i class="bi bi-film"></i></div>
+
+  <div class="stat-card teal">
+    <div class="stat-icon teal">
+      <i class="bi bi-film"></i>
+    </div>
     <div class="stat-body">
       <div class="stat-value" id="stat-processed">—</div>
       <div class="stat-label">Videos Processed</div>
     </div>
   </div>
+
 </div>
 
-<!-- Two-column layout -->
+<!-- ── Today's performance mini row ──────────────────────────────────────── -->
+<div class="perf-row" style="margin-bottom:24px;">
+  <div class="perf-mini">
+    <div class="perf-mini-label">Views Today</div>
+    <div class="perf-mini-value" id="perf-views">—</div>
+  </div>
+  <div class="perf-mini">
+    <div class="perf-mini-label">Avg Engagement</div>
+    <div class="perf-mini-value" id="perf-engagement">—</div>
+  </div>
+  <div class="perf-mini">
+    <div class="perf-mini-label">Top Platform</div>
+    <div class="perf-mini-value" id="perf-platform">—</div>
+  </div>
+</div>
+
+<!-- ── Two-column: Terminal + Recent Videos ───────────────────────────────── -->
 <div class="two-col">
-  <!-- Log feed -->
-  <div class="card-cc log-card">
-    <div class="card-header-cc">
-      <span><i class="bi bi-terminal"></i> Live Log</span>
+
+  <!-- Live log terminal -->
+  <div class="card-cc log-card" style="display:flex;flex-direction:column;">
+    <div class="card-header-cc" style="flex-shrink:0;">
+      <span style="display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-terminal"></i> Live Log
+      </span>
       <button class="btn-xs" onclick="clearLog()">Clear</button>
     </div>
+    <div class="log-terminal-header">
+      <div class="terminal-dots">
+        <div class="terminal-dot dot-red"></div>
+        <div class="terminal-dot dot-yellow"></div>
+        <div class="terminal-dot dot-green"></div>
+      </div>
+      <span class="terminal-title">clipcast-studio — pipeline</span>
+      <span class="terminal-live" id="terminal-live-indicator">LIVE</span>
+    </div>
     <div class="log-feed" id="log-feed">
-      <div class="log-line info">Waiting for pipeline activity...</div>
+      <div class="log-line info"><span class="log-msg">Waiting for pipeline activity...</span></div>
     </div>
   </div>
 
@@ -67,10 +109,15 @@
       <span><i class="bi bi-film"></i> Recent Videos</span>
     </div>
     <div id="recent-videos">
-      <div class="empty-state">Loading...</div>
+      <div class="empty-state">
+        <i class="bi bi-film empty-state-icon"></i>
+        <span class="empty-state-title">Loading...</span>
+      </div>
     </div>
   </div>
+
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -100,22 +147,70 @@ function loadRecentVideos() {
     .then(videos => {
       const el = document.getElementById('recent-videos');
       if (!videos.length) {
-        el.innerHTML = '<div class="empty-state">No processed videos yet</div>';
+        el.innerHTML = `
+          <div class="empty-state">
+            <i class="bi bi-camera-video empty-state-icon"></i>
+            <span class="empty-state-title">No processed videos yet</span>
+            <span class="empty-state-sub">Run a Test or Post Now to generate your first video</span>
+          </div>`;
         return;
       }
       el.innerHTML = videos.map(v => `
         <div class="video-row">
           <div class="video-icon"><i class="bi bi-file-play"></i></div>
           <div class="video-info">
-            <div class="video-name">${v.name}</div>
-            <div class="video-meta">${v.size_mb} MB &bull; ${v.modified}</div>
+            <div class="video-name">${escHtml(v.name)}</div>
+            <div class="video-meta">
+              <span class="chip">${v.size_mb} MB</span>
+              <span class="chip">${v.modified}</span>
+            </div>
           </div>
         </div>
       `).join('');
     });
 }
 
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function clearLog() {
+  const feed = document.getElementById('log-feed');
+  if (feed) feed.innerHTML = '';
+}
+
+// Load today's performance from analytics (best-effort)
+function loadTodayPerf() {
+  fetch('/api/analytics')
+    .then(r => r.json())
+    .then(items => {
+      if (!items || items.error || !items.length) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const todayItems = items.filter(r => (r.fetched_at || '').slice(0, 10) === today);
+      if (!todayItems.length) return;
+
+      const totalViews = todayItems.reduce((s, r) => s + (r.views || 0), 0);
+      const totalLikes = todayItems.reduce((s, r) => s + (r.likes || 0), 0);
+      const engagementRate = totalViews > 0 ? ((totalLikes / totalViews) * 100).toFixed(1) + '%' : '—';
+
+      const platformCounts = {};
+      todayItems.forEach(r => {
+        if (r.platform) platformCounts[r.platform] = (platformCounts[r.platform] || 0) + (r.views || 0);
+      });
+      const topPlatform = Object.keys(platformCounts).sort((a, b) => platformCounts[b] - platformCounts[a])[0];
+      const platformLabel = topPlatform ? topPlatform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '—';
+
+      document.getElementById('perf-views').textContent = totalViews.toLocaleString();
+      document.getElementById('perf-engagement').textContent = engagementRate;
+      document.getElementById('perf-platform').textContent = platformLabel;
+    })
+    .catch(() => {});
+}
+
 loadRecentVideos();
+loadTodayPerf();
 setInterval(loadRecentVideos, 15000);
 </script>
 {% endblock %}

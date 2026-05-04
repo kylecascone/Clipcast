@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}ClipCast Studio{% endblock %}</title>
 
   <!-- Bootstrap 5 -->
@@ -15,84 +15,101 @@
 </head>
 
 <body>
-  <!-- Sidebar -->
+<div class="app-layout">
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────────────── -->
   <nav class="sidebar" id="sidebar">
+
     <div class="sidebar-header">
-      <div class="sidebar-logo">
-        <span class="logo-icon">🎬</span>
-        <span class="logo-text">ClipCast</span>
-      </div>
-      <div class="logo-sub">Studio</div>
+      <a href="{{ url_for('index') }}" class="sidebar-logo" style="text-decoration:none">
+        <div class="logo-monogram">CC</div>
+        <div class="logo-text-wrap">
+          <span class="logo-brand">ClipCast</span>
+          <span class="logo-sub">Studio</span>
+        </div>
+      </a>
     </div>
 
     <ul class="sidebar-nav">
+
       <li class="nav-item {{ 'active' if request.endpoint == 'index' else '' }}">
         <a href="{{ url_for('index') }}" class="nav-link">
           <i class="bi bi-speedometer2"></i>
           <span>Dashboard</span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'schedule' else '' }}">
         <a href="{{ url_for('schedule') }}" class="nav-link">
           <i class="bi bi-calendar-week"></i>
           <span>Schedule</span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'queue_page' else '' }}">
         <a href="{{ url_for('queue_page') }}" class="nav-link">
           <i class="bi bi-list-task"></i>
           <span>Queue</span>
-          <span class="badge" id="nav-queue-count"></span>
+          <span class="nav-badge" id="nav-queue-count"></span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'analytics' else '' }}">
         <a href="{{ url_for('analytics') }}" class="nav-link">
           <i class="bi bi-bar-chart-line"></i>
           <span>Analytics</span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'pool' else '' }}">
         <a href="{{ url_for('pool') }}" class="nav-link">
           <i class="bi bi-collection-play"></i>
           <span>Clip Pool</span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'editor' else '' }}">
         <a href="{{ url_for('editor') }}" class="nav-link">
           <i class="bi bi-scissors"></i>
           <span>Editor</span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'accounts' else '' }}">
         <a href="{{ url_for('accounts') }}" class="nav-link">
           <i class="bi bi-person-badge"></i>
           <span>Accounts</span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'how_to' else '' }}">
         <a href="{{ url_for('how_to') }}" class="nav-link">
           <i class="bi bi-question-circle"></i>
           <span>How To</span>
         </a>
       </li>
+
       <li class="nav-item {{ 'active' if request.endpoint == 'settings' else '' }}">
         <a href="{{ url_for('settings') }}" class="nav-link">
           <i class="bi bi-gear"></i>
           <span>Settings</span>
         </a>
       </li>
+
     </ul>
 
     <div class="sidebar-footer">
       <div class="status-dot" id="pipeline-dot" title="Pipeline status"></div>
       <span class="status-label" id="pipeline-label">Idle</span>
     </div>
+
   </nav>
 
-  <!-- Main content -->
+  <!-- ── Main content ───────────────────────────────────────────────────────── -->
   <main class="main-content" id="main-content">
+
     <div class="topbar">
-      <button class="btn-icon sidebar-toggle" id="sidebar-toggle">
+      <button class="btn-icon sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
         <i class="bi bi-list"></i>
       </button>
       <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
@@ -102,12 +119,46 @@
     <div class="page-body">
       {% block content %}{% endblock %}
     </div>
+
   </main>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-  {% block scripts %}{% endblock %}
+</div><!-- /.app-layout -->
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+// ── Queue badge updater ────────────────────────────────────────────────────
+function updateQueueBadge() {
+  fetch('/api/queue')
+    .then(r => r.json())
+    .then(items => {
+      const pending = items.filter(i => i.status === 'pending').length;
+      const badge = document.getElementById('nav-queue-count');
+      if (badge) {
+        badge.textContent = pending;
+        badge.classList.toggle('visible', pending > 0);
+      }
+    })
+    .catch(() => {});
+}
+
+updateQueueBadge();
+setInterval(updateQueueBadge, 30000);
+
+// ── Sidebar toggle (mobile) ────────────────────────────────────────────────
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebar = document.getElementById('sidebar');
+if (sidebarToggle) {
+  sidebarToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+}
+</script>
+
+{% block scripts %}{% endblock %}
 </body>
 </html>

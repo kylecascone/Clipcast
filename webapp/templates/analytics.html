@@ -14,36 +14,87 @@
 {% endblock %}
 
 {% block content %}
-<div class="two-col">
+
+<!-- ── Summary stats row ──────────────────────────────────────────────────── -->
+<div class="analytics-summary">
+  <div class="analytics-mini">
+    <div class="analytics-mini-label">Total Posts</div>
+    <div class="analytics-mini-value" id="asum-posts">—</div>
+  </div>
+  <div class="analytics-mini">
+    <div class="analytics-mini-label">Total Views</div>
+    <div class="analytics-mini-value" id="asum-views">—</div>
+  </div>
+  <div class="analytics-mini">
+    <div class="analytics-mini-label">Total Likes</div>
+    <div class="analytics-mini-value" id="asum-likes">—</div>
+  </div>
+  <div class="analytics-mini">
+    <div class="analytics-mini-label">Best Platform</div>
+    <div class="analytics-mini-value" id="asum-platform">—</div>
+  </div>
+</div>
+
+<!-- ── Charts ─────────────────────────────────────────────────────────────── -->
+<div class="two-col" style="margin-bottom:20px;">
+
   <div class="card-cc">
-    <div class="card-header-cc"><span><i class="bi bi-eye"></i> Views Over Time</span></div>
+    <div class="card-header-cc">
+      <span><i class="bi bi-eye"></i> Views Over Time</span>
+    </div>
     <div class="chart-wrapper">
       <canvas id="views-chart"></canvas>
     </div>
   </div>
+
   <div class="card-cc">
-    <div class="card-header-cc"><span><i class="bi bi-heart"></i> Engagement Breakdown</span></div>
+    <div class="card-header-cc">
+      <span><i class="bi bi-heart"></i> Engagement Breakdown</span>
+    </div>
     <div class="chart-wrapper">
       <canvas id="engagement-chart"></canvas>
     </div>
   </div>
+
 </div>
 
-<div class="card-cc" style="margin-top:1.5rem">
+<!-- ── Post history table ─────────────────────────────────────────────────── -->
+<div class="card-cc">
   <div class="card-header-cc">
     <span><i class="bi bi-table"></i> Post History</span>
   </div>
-  <div class="table-wrapper">
+  <div id="analytics-empty" style="display:none;">
+    <div class="empty-state">
+      <i class="bi bi-bar-chart-line empty-state-icon"></i>
+      <span class="empty-state-title">No analytics data yet</span>
+      <span class="empty-state-sub">Posts will appear here once you start publishing. Views and engagement pull from YouTube and TikTok APIs.</span>
+    </div>
+  </div>
+  <div class="table-wrapper" id="analytics-table-wrap">
     <table class="cc-table">
       <thead>
-        <tr><th>Title</th><th>Platform</th><th>Views</th><th>Likes</th><th>Shares</th><th>Date</th></tr>
+        <tr>
+          <th>Title</th>
+          <th>Platform</th>
+          <th>Views</th>
+          <th>Likes</th>
+          <th>Shares</th>
+          <th>Date</th>
+        </tr>
       </thead>
       <tbody id="analytics-body">
-        <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+        <tr>
+          <td colspan="6">
+            <div class="empty-state" style="padding:30px;">
+              <span>Loading...</span>
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -51,29 +102,67 @@
 let viewsChart, engagementChart;
 
 function initCharts() {
-  const chartOpts = {
+  const gridColor = 'rgba(255,255,255,0.05)';
+  const tickColor = '#8892b0';
+
+  const baseOpts = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: '#b0b0cc' } } },
-    scales: {
-      x: { ticks: { color: '#b0b0cc' }, grid: { color: '#2a2a40' } },
-      y: { ticks: { color: '#b0b0cc' }, grid: { color: '#2a2a40' } },
+    plugins: {
+      legend: {
+        labels: { color: tickColor, font: { size: 12 } }
+      }
     },
+    scales: {
+      x: {
+        ticks: { color: tickColor, font: { size: 11 } },
+        grid: { color: gridColor }
+      },
+      y: {
+        ticks: { color: tickColor, font: { size: 11 } },
+        grid: { color: gridColor }
+      }
+    }
   };
 
   viewsChart = new Chart(document.getElementById('views-chart'), {
     type: 'line',
-    data: { labels: [], datasets: [{ label: 'Views', data: [], borderColor: '#6c63ff', tension: 0.4, fill: true, backgroundColor: 'rgba(108,99,255,0.15)' }] },
-    options: chartOpts,
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Views',
+        data: [],
+        borderColor: '#6c63ff',
+        tension: 0.4,
+        fill: true,
+        backgroundColor: 'rgba(108,99,255,0.1)',
+        pointBackgroundColor: '#6c63ff',
+        pointRadius: 3
+      }]
+    },
+    options: baseOpts
   });
 
   engagementChart = new Chart(document.getElementById('engagement-chart'), {
     type: 'bar',
     data: {
       labels: ['Likes', 'Shares', 'Comments'],
-      datasets: [{ label: 'Total', data: [0, 0, 0], backgroundColor: ['#6c63ff', '#00d4ff', '#ff6584'] }],
+      datasets: [{
+        label: 'Total',
+        data: [0, 0, 0],
+        backgroundColor: ['rgba(108,99,255,0.7)', 'rgba(78,205,196,0.7)', 'rgba(255,107,107,0.7)'],
+        borderColor: ['#6c63ff', '#4ecdc4', '#ff6b6b'],
+        borderWidth: 1,
+        borderRadius: 4
+      }]
     },
-    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, beginAtZero: true } } },
+    options: {
+      ...baseOpts,
+      scales: {
+        ...baseOpts.scales,
+        y: { ...baseOpts.scales.y, beginAtZero: true }
+      }
+    }
   });
 }
 
@@ -81,26 +170,54 @@ function loadAnalytics() {
   fetch('/api/analytics')
     .then(r => r.json())
     .then(items => {
-      if (items.error) { document.getElementById('analytics-body').innerHTML = `<tr><td colspan="6" class="empty-state">${items.error}</td></tr>`; return; }
-      if (!items.length) { document.getElementById('analytics-body').innerHTML = '<tr><td colspan="6" class="empty-state">No analytics data yet. Post some videos first.</td></tr>'; return; }
+      if (items.error) {
+        document.getElementById('analytics-body').innerHTML =
+          `<tr><td colspan="6"><div class="empty-state"><span>${items.error}</span></div></td></tr>`;
+        return;
+      }
+
+      if (!items.length) {
+        document.getElementById('analytics-table-wrap').style.display = 'none';
+        document.getElementById('analytics-empty').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('analytics-table-wrap').style.display = '';
+      document.getElementById('analytics-empty').style.display = 'none';
+
+      // Summary stats
+      const totalViews = items.reduce((s, r) => s + (r.views || 0), 0);
+      const totalLikes = items.reduce((s, r) => s + (r.likes || 0), 0);
+      document.getElementById('asum-posts').textContent = items.length;
+      document.getElementById('asum-views').textContent = fmtNum(totalViews);
+      document.getElementById('asum-likes').textContent = fmtNum(totalLikes);
+
+      const platformViews = {};
+      items.forEach(r => {
+        if (r.platform) platformViews[r.platform] = (platformViews[r.platform] || 0) + (r.views || 0);
+      });
+      const bestPlatform = Object.keys(platformViews).sort((a, b) => platformViews[b] - platformViews[a])[0];
+      document.getElementById('asum-platform').textContent = bestPlatform
+        ? bestPlatform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+        : '—';
 
       // Table
       document.getElementById('analytics-body').innerHTML = items.map(r => `
         <tr>
-          <td>${r.clip_title || '—'}</td>
-          <td><span class="platform-tag ${r.platform}">${r.platform}</span></td>
-          <td>${(r.views||0).toLocaleString()}</td>
-          <td>${(r.likes||0).toLocaleString()}</td>
-          <td>${(r.shares||0).toLocaleString()}</td>
-          <td>${(r.fetched_at||'').slice(0,10)}</td>
+          <td class="title-col">${escHtml(r.clip_title || '—')}</td>
+          <td><span class="platform-tag ${(r.platform || '').replace(/\s/g, '_')}">${(r.platform || '—').replace('_', ' ')}</span></td>
+          <td>${(r.views || 0).toLocaleString()}</td>
+          <td>${(r.likes || 0).toLocaleString()}</td>
+          <td>${(r.shares || 0).toLocaleString()}</td>
+          <td class="time-col">${(r.fetched_at || '').slice(0, 10)}</td>
         </tr>
       `).join('');
 
       // Charts
-      const labels  = items.slice(0, 10).map(r => (r.clip_title || '').slice(0, 15));
+      const labels  = items.slice(0, 10).map(r => (r.clip_title || '').slice(0, 12));
       const views   = items.slice(0, 10).map(r => r.views || 0);
-      const totLikes   = items.reduce((s, r) => s + (r.likes   || 0), 0);
-      const totShares  = items.reduce((s, r) => s + (r.shares  || 0), 0);
+      const totLikes    = items.reduce((s, r) => s + (r.likes    || 0), 0);
+      const totShares   = items.reduce((s, r) => s + (r.shares   || 0), 0);
       const totComments = items.reduce((s, r) => s + (r.comments || 0), 0);
 
       viewsChart.data.labels = labels;
@@ -110,6 +227,19 @@ function loadAnalytics() {
       engagementChart.data.datasets[0].data = [totLikes, totShares, totComments];
       engagementChart.update();
     });
+}
+
+function fmtNum(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
 }
 
 initCharts();

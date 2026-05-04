@@ -148,20 +148,34 @@ def api_schedule_post():
 
 @app.route("/api/creators")
 def api_creators():
+    """Return trending creators for schedule dropdowns."""
+    try:
+        from trending_discovery import get_top_trending_creators
+        trending = get_top_trending_creators(limit=25, max_age_hours=24)
+        if trending:
+            return jsonify(trending)
+    except Exception:
+        pass
+    # Fallback: distinct creator names from shared_clips
     try:
         from database import get_connection
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT DISTINCT creator_name, source
-            FROM shared_clips
-            WHERE creator_name IS NOT NULL AND creator_name != ''
-            AND is_blocked = 0
-            ORDER BY creator_name ASC
-        """)
-        rows = cur.fetchall()
+        rows = conn.execute(
+            "SELECT DISTINCT creator_name FROM shared_clips WHERE creator_name IS NOT NULL "
+            "AND creator_name != '' ORDER BY creator_name LIMIT 100"
+        ).fetchall()
         conn.close()
-        creators = [{"name": row[0], "platform": row[1]} for row in rows]
+        return jsonify([{"creator_name": r[0], "platform": "twitch", "viewer_count": 0, "viral_signal_boost": 0} for r in rows])
+    except Exception as exc:
+        return jsonify([])
+
+
+@app.route("/api/trending-creators")
+def api_trending_creators():
+    """Return all trending creators with full stats for the Settings page."""
+    try:
+        from trending_discovery import get_top_trending_creators
+        creators = get_top_trending_creators(limit=50, max_age_hours=48)
         return jsonify(creators)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

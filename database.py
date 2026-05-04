@@ -356,6 +356,26 @@ def initialize_database(db_path: Optional[Path] = None) -> None:
             "ON shared_clip_reservations(user_id, shared_clip_id, expires_at)"
         )
 
+        # ── trending_creators ──────────────────────────────────────────────────
+        # Dynamic trending creator list — refreshed every 6 hours by
+        # trending_discovery.py alongside the pool refresh cycle.
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS trending_creators (
+                creator_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                creator_name        TEXT    NOT NULL UNIQUE,
+                platform            TEXT    NOT NULL DEFAULT 'twitch',
+                viewer_count        INTEGER DEFAULT 0,
+                viral_signal_boost  REAL    DEFAULT 0.0,
+                rank                INTEGER DEFAULT 0,
+                last_updated        TEXT    NOT NULL DEFAULT (datetime('now')),
+                category            TEXT    DEFAULT ''
+            )
+        """)
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_trending_creators_platform "
+            "ON trending_creators(platform, last_updated)"
+        )
+
         # ── auto-update triggers ───────────────────────────────────────────────
         cur.execute("""
             CREATE TRIGGER IF NOT EXISTS trg_clips_updated_at
@@ -426,6 +446,8 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
         "ALTER TABLE shared_clips ADD COLUMN hashtags_instagram TEXT",
         # content category for schedule-based filtering (Phase 2)
         "ALTER TABLE shared_clips ADD COLUMN content_category TEXT DEFAULT ''",
+        # trending_creators table (dynamic creator discovery)
+        "CREATE TABLE IF NOT EXISTS trending_creators (creator_id INTEGER PRIMARY KEY AUTOINCREMENT, creator_name TEXT NOT NULL UNIQUE, platform TEXT NOT NULL DEFAULT 'twitch', viewer_count INTEGER DEFAULT 0, viral_signal_boost REAL DEFAULT 0.0, rank INTEGER DEFAULT 0, last_updated TEXT NOT NULL DEFAULT (datetime('now')), category TEXT DEFAULT '')",
     ]
     for sql in migrations:
         try:

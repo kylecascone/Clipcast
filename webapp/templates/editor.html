@@ -5,10 +5,14 @@
 
 {% block content %}
 <div class="two-col">
-  <!-- Left: Submit -->
+
+  <!-- ── Left: Submit form ─────────────────────────────────────────────── -->
   <div class="card-cc">
-    <div class="card-header-cc"><span><i class="bi bi-link-45deg"></i> Submit a Clip</span></div>
+    <div class="card-header-cc">
+      <span><i class="bi bi-link-45deg"></i> Submit a Clip</span>
+    </div>
     <div class="editor-form">
+
       <div class="form-group">
         <label class="form-label">Twitch or YouTube URL</label>
         <input type="url" id="clip-url" class="cc-input" placeholder="https://www.twitch.tv/.../clip/... or YouTube URL">
@@ -53,16 +57,28 @@
       <button class="btn-primary-cc full-width" id="submit-btn" onclick="submitClip()">
         <i class="bi bi-play-circle"></i> Process Clip
       </button>
+
     </div>
   </div>
 
-  <!-- Right: Progress + output -->
-  <div class="card-cc">
-    <div class="card-header-cc"><span><i class="bi bi-terminal"></i> Processing Log</span></div>
+  <!-- ── Right: Processing log ─────────────────────────────────────────── -->
+  <div class="card-cc" style="display:flex;flex-direction:column;">
+    <div class="card-header-cc" style="flex-shrink:0;">
+      <span><i class="bi bi-terminal"></i> Processing Log</span>
+    </div>
+    <div class="log-terminal-header">
+      <div class="terminal-dots">
+        <div class="terminal-dot dot-red"></div>
+        <div class="terminal-dot dot-yellow"></div>
+        <div class="terminal-dot dot-green"></div>
+      </div>
+      <span class="terminal-title">editor — processing output</span>
+    </div>
     <div class="log-feed" id="editor-log">
-      <div class="log-line info">Submit a clip URL to begin...</div>
+      <div class="log-line info"><span class="log-msg">Submit a clip URL to begin...</span></div>
     </div>
   </div>
+
 </div>
 {% endblock %}
 

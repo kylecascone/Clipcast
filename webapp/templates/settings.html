@@ -10,13 +10,17 @@
 {% endblock %}
 
 {% block content %}
-<!-- Tab nav -->
+
+<!-- ── Tab nav ──────────────────────────────────────────────────────────── -->
 <div class="settings-tabs" id="settings-tabs">
   <button class="stab active" onclick="switchTab('preferences', this)">Preferences</button>
   <button class="stab" onclick="switchTab('blocked', this)">Blocked Creators</button>
+  <button class="stab" onclick="switchTab('trending', this)">Trending Creators</button>
 </div>
 
-<!-- Tab: Preferences -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Tab: Preferences                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div id="tab-preferences">
 <div class="settings-grid">
 
@@ -159,9 +163,9 @@
     </div>
   </div>
 
-  <!-- Captions & AI -->
+  <!-- Captions & Features -->
   <div class="card-cc">
-    <div class="card-header-cc"><span><i class="bi bi-chat-quote"></i> Captions & Features</span></div>
+    <div class="card-header-cc"><span><i class="bi bi-chat-quote"></i> Captions &amp; Features</span></div>
     <div class="settings-body">
       <div class="setting-row">
         <div class="setting-info">
@@ -213,7 +217,9 @@
 </div>
 </div><!-- end tab-preferences -->
 
-<!-- Tab: Blocked Creators -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Tab: Blocked Creators                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div id="tab-blocked" style="display:none">
   <div class="card-cc">
     <div class="card-header-cc">
@@ -234,7 +240,34 @@
   </div>
 </div>
 
-<!-- Add modal (reused from blocked tab) -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Tab: Trending Creators                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="tab-trending" style="display:none">
+  <div class="card-cc">
+    <div class="card-header-cc">
+      <span><i class="bi bi-fire"></i> Top Trending Creators</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:11px;color:#4a5568;" id="trending-updated"></span>
+        <button class="btn-primary-cc btn-sm" onclick="refreshTrending()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh Now
+        </button>
+      </div>
+    </div>
+    <p class="settings-note">
+      Live trending creators discovered by ClipCast. Sorted by viewer count. Refreshes every 6 hours automatically.
+    </p>
+    <div id="trending-list">
+      <div class="empty-state">
+        <i class="bi bi-fire empty-state-icon"></i>
+        <span class="empty-state-title">No trending data yet</span>
+        <span class="empty-state-sub">Click "Refresh Now" to fetch the latest trending creators from Twitch and YouTube.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Block creator modal -->
 <div class="cc-modal" id="add-modal" style="display:none">
   <div class="cc-modal-box">
     <div class="cc-modal-header">
@@ -258,31 +291,6 @@
   </div>
 </div>
 
-<style>
-.settings-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #2a2d3e;
-  padding-bottom: 0;
-}
-.stab {
-  padding: 8px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: -1px;
-}
-.stab:hover { color: #e2e8f0; }
-.stab.active { color: #6c63ff; border-bottom-color: #6c63ff; }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
-</style>
-
 {% endblock %}
 
 {% block scripts %}
@@ -290,13 +298,17 @@
 function switchTab(name, btn) {
   document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+
   document.getElementById('tab-preferences').style.display = name === 'preferences' ? '' : 'none';
   document.getElementById('tab-blocked').style.display     = name === 'blocked'     ? '' : 'none';
+  document.getElementById('tab-trending').style.display    = name === 'trending'    ? '' : 'none';
   document.getElementById('save-btn').style.display        = name === 'preferences' ? '' : 'none';
-  if (name === 'blocked') loadBlocked();
+
+  if (name === 'blocked')  loadBlocked();
+  if (name === 'trending') loadTrending();
 }
 
-// ── Blocked tab ────────────────────────────────────────────────────────────
+// ── Blocked tab ─────────────────────────────────────────────────────────────
 function loadBlocked() {
   fetch('/api/blocked')
     .then(r => r.json())
@@ -304,7 +316,7 @@ function loadBlocked() {
       document.getElementById('blocked-count').textContent = list.length;
       if (!list.length) {
         document.getElementById('blocked-list').innerHTML =
-          '<div class="empty-state">No creators blocked.</div>';
+          '<div class="empty-state"><span>No creators blocked.</span></div>';
         return;
       }
       document.getElementById('blocked-list').innerHTML = `
@@ -313,8 +325,8 @@ function loadBlocked() {
           <tbody>
             ${list.map(item => `
               <tr>
-                <td><i class="bi bi-person-slash" style="color:var(--danger);margin-right:.5rem"></i>${escHtmlB(item.name)}</td>
-                <td><span class="platform-tag ${item.platform}">${item.platform}</span></td>
+                <td><i class="bi bi-person-slash" style="color:var(--red);margin-right:.5rem"></i>${escHtmlB(item.name)}</td>
+                <td><span class="platform-tag ${escHtmlB(item.platform)}">${escHtmlB(item.platform)}</span></td>
                 <td style="text-align:right">
                   <button class="btn-xs danger" onclick="removeBlocked('${escHtmlB(item.name)}','${escHtmlB(item.platform)}')">Remove</button>
                 </td>
@@ -328,7 +340,10 @@ function removeBlocked(name, platform) {
   if (!confirm(`Remove "${name}" from the blocked list?`)) return;
   fetch(`/api/blocked/${encodeURIComponent(name)}?platform=${platform}`, { method: 'DELETE' })
     .then(r => r.json())
-    .then(d => { showToast(d.ok ? 'Removed' : d.error, d.ok ? 'success' : 'error'); loadBlocked(); });
+    .then(d => {
+      showToast(d.ok ? 'Removed' : d.error, d.ok ? 'success' : 'error');
+      loadBlocked();
+    });
 }
 
 function showAddModal() {
@@ -360,21 +375,112 @@ document.getElementById('add-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('add-modal')) closeModal();
 });
 
-function escHtmlB(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
+// ── Trending tab ─────────────────────────────────────────────────────────────
+function loadTrending() {
+  const listEl = document.getElementById('trending-list');
+  listEl.innerHTML = '<div class="empty-state"><span>Loading trending creators...</span></div>';
+
+  fetch('/api/trending-creators')
+    .then(r => r.json())
+    .then(data => {
+      const creators = data.creators || data || [];
+      if (!creators.length) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <i class="bi bi-fire empty-state-icon"></i>
+            <span class="empty-state-title">No trending data yet</span>
+            <span class="empty-state-sub">Click "Refresh Now" to fetch the latest trending creators from Twitch and YouTube.</span>
+          </div>`;
+        return;
+      }
+
+      const maxViews = Math.max(...creators.map(c => c.viewer_count || 0), 1);
+      const updatedEl = document.getElementById('trending-updated');
+      if (data.updated_at) {
+        updatedEl.textContent = 'Updated ' + relTime(data.updated_at);
+      }
+
+      listEl.innerHTML = `
+        <table class="cc-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Creator</th>
+              <th>Platform</th>
+              <th>Viewers</th>
+              <th>Viral Signal</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${creators.slice(0, 25).map((c, i) => {
+              const pct = Math.round(((c.viewer_count || 0) / maxViews) * 100);
+              const platformBadge = (c.platform || 'twitch').toLowerCase();
+              const platformLabel = platformBadge === 'twitch' ? 'Twitch' : 'YouTube';
+              const viewerFmt = fmtNumT(c.viewer_count || 0);
+              const updatedAt = c.fetched_at || c.updated_at || '';
+              return `
+                <tr>
+                  <td class="id-col">${i + 1}</td>
+                  <td><strong>${escHtmlB(c.creator_name || c.name || '—')}</strong></td>
+                  <td>
+                    <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;
+                      background:${platformBadge === 'twitch' ? 'rgba(145,70,255,0.15)' : 'rgba(255,0,0,0.12)'};
+                      color:${platformBadge === 'twitch' ? '#9146ff' : '#ff4444'}">
+                      ${platformLabel}
+                    </span>
+                  </td>
+                  <td>${viewerFmt}</td>
+                  <td>
+                    <div class="viral-bar">
+                      <div class="viral-bar-track">
+                        <div class="viral-bar-fill" style="width:${pct}%"></div>
+                      </div>
+                      <span class="viral-label">${pct}%</span>
+                    </div>
+                  </td>
+                  <td class="time-col">${updatedAt ? relTime(updatedAt) : '—'}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    })
+    .catch(e => {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <span>Could not load trending data. Try refreshing.</span>
+        </div>`;
+    });
 }
 
-// ── Preferences tab ────────────────────────────────────────────────────────
-// Map of setting id → type
-const BOOL_KEYS = [
-  'clip_preview_required', 'allow_clips_from_non_target_streamers',
-  'allow_youtube_trending', 'youtube_global_pool_enabled',
-  'twitch_enabled', 'youtube_enabled', 'animated_captions_enabled',
-  'smart_hashtags_enabled', 'thumbnail_enabled', 'learning_enabled',
-];
+function refreshTrending() {
+  fetch('/api/refresh-pool', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      showToast(d.error || 'Pool refresh started — trending data will update shortly', d.error ? 'error' : 'success');
+      setTimeout(loadTrending, 3000);
+    });
+}
 
+function fmtNumT(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function relTime(str) {
+  if (!str) return '—';
+  const d = new Date(str.replace(' ', 'T'));
+  if (isNaN(d)) return str.slice(0, 10);
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60)  return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+// ── Preferences tab ─────────────────────────────────────────────────────────
 function loadSettings() {
   fetch('/api/settings')
     .then(r => r.json())
@@ -400,11 +506,17 @@ function saveSettings() {
 
   fetch('/api/settings', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }).then(r => r.json()).then(d => {
     showToast(d.ok ? 'Settings saved!' : (d.error || 'Error'), d.ok ? 'success' : 'error');
   });
+}
+
+function escHtmlB(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
 }
 
 loadSettings();

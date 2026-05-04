@@ -135,7 +135,6 @@ def refresh_twitch_pool(
     category_added = 0
 
     try:
-        from viral_creators import TIER1_TWITCH
         from fetcher_twitch import (
             _get_access_token,
             _resolve_user_ids,
@@ -151,15 +150,30 @@ def refresh_twitch_pool(
             datetime.now(timezone.utc) - timedelta(days=7)
         ).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+        # ── Try dynamic trending creators first; fall back to TIER1_TWITCH ────
+        try:
+            from trending_discovery import get_top_trending_creators
+            trending = get_top_trending_creators(limit=25, max_age_hours=24)
+            if trending:
+                target_streamers = [c["creator_name"] for c in trending]
+                logger.info("refresh_twitch_pool: using %d trending creators", len(target_streamers))
+            else:
+                from viral_creators import TIER1_TWITCH
+                target_streamers = list(TIER1_TWITCH)
+                logger.info("refresh_twitch_pool: no trending data — using TIER1_TWITCH fallback (%d creators)", len(target_streamers))
+        except ImportError:
+            from viral_creators import TIER1_TWITCH
+            target_streamers = list(TIER1_TWITCH)
+
         # ── TIER1 whitelist clips ─────────────────────────────────────────────
         logger.info(
-            "refresh_twitch_pool: resolving %d TIER1_TWITCH creator(s)…",
-            len(TIER1_TWITCH),
+            "refresh_twitch_pool: resolving %d creator(s)…",
+            len(target_streamers),
         )
-        user_id_map = _resolve_user_ids(TIER1_TWITCH, client_id, access_token)
+        user_id_map = _resolve_user_ids(target_streamers, client_id, access_token)
         logger.info(
             "refresh_twitch_pool: resolved %d/%d creators — fetching clips…",
-            len(user_id_map), len(TIER1_TWITCH),
+            len(user_id_map), len(target_streamers),
         )
 
         for username, broadcaster_id in user_id_map.items():
@@ -798,6 +812,16 @@ def refresh_viral_discovery_pool(
                     dsrc = clip.get("discovery_source", "")
                     if dsrc == "reddit_trending":
                         reddit_added += 1
+                        # Boost creator from Reddit signal
+                        try:
+                            from trending_discovery import boost_creator_from_reddit, extract_creator_from_reddit_title
+                            post_title = clip.get("viral_title") or clip.get("title") or ""
+                            post_upvotes = int(clip.get("upvotes", 0) or 0)
+                            creator_hint = clip.get("creator_name") or extract_creator_from_reddit_title(post_title)
+                            if creator_hint and post_upvotes >= 1000:
+                                boost_creator_from_reddit(creator_hint, post_upvotes)
+                        except Exception:
+                            pass
                     elif dsrc == "youtube_shorts_trending":
                         yt_added += 1
                     elif dsrc == "medal_trending":
@@ -925,6 +949,14 @@ def refresh_all_pools(
         }
 
     t_start = time.time()
+
+    # 0. Refresh trending creators list
+    try:
+        from trending_discovery import refresh_all_trending
+        trending_result = refresh_all_trending(user_config=user_config)
+        logger.info("Trending creators refreshed: %s", trending_result)
+    except Exception as exc:
+        logger.warning("Trending creator refresh failed (non-fatal): %s", exc)
 
     # 2. Ensure tables exist
     shared_pool.initialize_shared_pool_tables(db_path=db_path)
